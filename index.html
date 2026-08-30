@@ -285,12 +285,59 @@
   table.list-table tr.rowitem{ cursor:pointer; transition:background .15s ease; }
   table.list-table tr.rowitem:active{ background:var(--accent-tint); }
   table.list-table td.memo-cell{ color:var(--ink-soft); font-size:11.5px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  table.list-table .hall-badge{
+  .hall-badge{
     display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:var(--radius-pill);
     background:var(--accent-tint); color:var(--accent-deep); white-space:nowrap;
   }
 
   .divider{ height:1px; background:var(--border); margin:20px 0; }
+
+  /* ---------- Calendar view ---------- */
+  .view-toggle{ display:flex; gap:8px; margin-bottom:14px; }
+  .view-toggle .chip{ flex:1; text-align:center; }
+  .cal-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .cal-nav button{
+    background:var(--surface-input); border:1px solid var(--border); color:var(--ink);
+    width:34px; height:34px; border-radius:50%; font-size:15px; cursor:pointer;
+  }
+  .cal-nav .cal-title{ font-weight:800; font-size:15px; }
+  .cal-grid{
+    display:grid; grid-template-columns:repeat(7,1fr); gap:5px;
+    background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-md);
+    -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    padding:10px; box-shadow:0 8px 24px -18px rgba(var(--ink-rgb),0.3);
+  }
+  .cal-dow{ text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); padding:4px 0 8px; }
+  .cal-cell{
+    position:relative; aspect-ratio:1/1; border-radius:10px; display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-start; padding-top:6px; cursor:pointer; font-size:12px;
+    color:var(--ink); background:transparent; border:1.5px solid transparent; transition:all .15s ease;
+  }
+  .cal-cell.empty{ cursor:default; }
+  .cal-cell.today{ border-color:var(--accent); font-weight:800; }
+  .cal-cell.selected{ background:var(--accent-tint-strong); }
+  .cal-cell:active{ background:var(--neutral-tint); }
+  .cal-dots{ display:flex; gap:2px; margin-top:4px; flex-wrap:wrap; justify-content:center; max-width:32px; }
+  .cal-dot{ width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .cal-daylist{ margin-top:16px; }
+  .cal-daylist-title{ font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:8px; }
+  .cal-day-row{
+    display:flex; align-items:center; gap:10px; padding:11px 13px; border-radius:var(--radius-sm);
+    background:var(--surface); border:1px solid var(--border); margin-bottom:7px; cursor:pointer;
+  }
+  .cal-day-row .time{ font-weight:800; font-size:13px; min-width:48px; }
+  .cal-day-row .code{ font-weight:700; font-size:13px; flex:1; }
+  .cal-legend{ display:flex; gap:14px; margin-top:12px; font-size:11.5px; color:var(--ink-soft); flex-wrap:wrap; }
+  .cal-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .cal-legend .cal-dot{ width:7px; height:7px; }
+
+  /* ---------- Home: this-week celebration widget ---------- */
+  .week-row{
+    display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);
+  }
+  .week-row:last-child{ border-bottom:none; }
+  .week-row .wd{ font-weight:800; font-size:13px; min-width:74px; color:var(--accent-deep); }
+  .week-row .wc{ font-weight:700; font-size:13px; flex:1; }
 
   /* ---------- Bottom nav: floating glass capsule, scroll-reactive ---------- */
   nav.bottom{
@@ -394,6 +441,11 @@
       <p class="muted">평일 9~18시가 가장 활발하고, 이후엔 조용해지는 편이에요.</p>
     </div>
 
+    <div class="card" id="weekCard" style="display:none;">
+      <h3>🎉 이번 주 예식이 있어요</h3>
+      <div id="weekList"></div>
+    </div>
+
     <div class="row2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:130px;">
       <button class="btn btn-outline" onclick="go('halls')">홀 일정 보기</button>
       <button class="btn btn-outline" onclick="go('codes')">짝꿍코드 보기</button>
@@ -405,10 +457,31 @@
     <div class="kicker">SCHEDULE</div><div class="section-title">홀 예식 일정</div>
     <p class="section-sub">홀별 예식 일정을 확인하고, 본인 일정을 직접 등록해주세요.</p>
 
-    <input class="search" id="hallSearch" placeholder="코드(닉네임)로 검색..." oninput="renderHalls()">
-    <div class="chiprow" id="hallChips"></div>
+    <div class="view-toggle">
+      <button class="chip active" id="viewToggleList" onclick="setHallView('list')">목록</button>
+      <button class="chip" id="viewToggleCal" onclick="setHallView('calendar')">달력</button>
+    </div>
 
-    <div id="hallList"><div class="loading">불러오는 중...</div></div>
+    <div id="hallListView">
+      <input class="search" id="hallSearch" placeholder="코드(닉네임)로 검색..." oninput="renderHalls()">
+      <div class="chiprow" id="hallChips"></div>
+      <div id="hallList"><div class="loading">불러오는 중...</div></div>
+    </div>
+
+    <div id="hallCalendarView" style="display:none;">
+      <div class="cal-nav">
+        <button onclick="calShiftMonth(-1)">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button onclick="calShiftMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i class="cal-dot" style="background:#3355FF"></i>제니스홀</span>
+        <span><i class="cal-dot" style="background:#D98F2B"></i>더뉴홀</span>
+        <span><i class="cal-dot" style="background:#C2447A"></i>르노브홀</span>
+      </div>
+      <div class="cal-daylist" id="calDayList"></div>
+    </div>
   </section>
 
   <!-- ================= MATCHING CODES ================= -->
@@ -1446,6 +1519,123 @@ function renderHalls(){
     <thead><tr><th>코드</th><th>홀</th><th>일정</th><th>메모</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
+
+  renderHomeWeek();
+}
+
+/* ---------- View toggle (list / calendar) ---------- */
+let hallView = 'list';
+function setHallView(v){
+  hallView = v;
+  document.getElementById('viewToggleList').classList.toggle('active', v==='list');
+  document.getElementById('viewToggleCal').classList.toggle('active', v==='calendar');
+  document.getElementById('hallListView').style.display = v==='list' ? '' : 'none';
+  document.getElementById('hallCalendarView').style.display = v==='calendar' ? '' : 'none';
+  if(v==='calendar') renderCalendar();
+}
+
+/* ---------- Calendar mode ---------- */
+const HALL_DOT_COLOR = { '제니스홀':'#3355FF', '더뉴홀':'#D98F2B', '르노브홀':'#C2447A' };
+let calCursor = new Date(); calCursor.setDate(1);
+let calSelectedDate = null;
+
+function calShiftMonth(diff){
+  calCursor.setMonth(calCursor.getMonth()+diff);
+  calSelectedDate = null;
+  renderCalendar();
+}
+
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+function renderCalendar(){
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  document.getElementById('calTitle').textContent = `${y}년 ${m+1}월`;
+
+  const dated = halls.filter(h=>h.datetime);
+  const byDate = {};
+  dated.forEach(h=>{
+    const key = h.datetime.slice(0,10);
+    (byDate[key] = byDate[key] || []).push(h);
+  });
+
+  const firstDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const todayKey = ymd(new Date());
+
+  let cells = ['일','월','화','수','목','금','토'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) cells += `<div class="cal-cell empty"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const dateObj = new Date(y,m,day);
+    const key = ymd(dateObj);
+    const items = (byDate[key]||[]).slice().sort((a,b)=>a.datetime.localeCompare(b.datetime));
+    const dots = items.slice(0,4).map(h=>`<span class="cal-dot" style="background:${HALL_DOT_COLOR[h.hall]||'#888'}"></span>`).join('');
+    const cls = ['cal-cell', key===todayKey?'today':'', key===calSelectedDate?'selected':''].filter(Boolean).join(' ');
+    cells += `<div class="${cls}" onclick="calSelectDate('${key}')">${day}<div class="cal-dots">${dots}</div></div>`;
+  }
+  document.getElementById('calGrid').innerHTML = cells;
+
+  if(calSelectedDate) renderCalDayList(calSelectedDate, byDate[calSelectedDate]||[]);
+  else document.getElementById('calDayList').innerHTML = '';
+}
+
+function calSelectDate(key){
+  calSelectedDate = key;
+  renderCalendar();
+}
+
+function renderCalDayList(key, items){
+  const d = new Date(key+'T00:00');
+  const days=['일','월','화','수','목','금','토'];
+  const label = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+  if(items.length===0){
+    document.getElementById('calDayList').innerHTML = `<div class="cal-daylist-title">${label}</div><p class="muted">예정된 일정이 없어요.</p>`;
+    return;
+  }
+  const sorted = items.slice().sort((a,b)=>a.datetime.localeCompare(b.datetime));
+  const rows = sorted.map(h=>{
+    const t = h.datetime.slice(11,16);
+    return `<div class="cal-day-row" onclick="openHallDetail('${h.id}')">
+      <span class="time">${t}</span>
+      <span class="code">${escapeHtml(h.code)}</span>
+      <span class="hall-badge">${h.hall}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('calDayList').innerHTML = `<div class="cal-daylist-title">${label}</div>${rows}`;
+}
+
+/* ---------- Home: this-week celebration widget ---------- */
+function getWeekRange(base){
+  const d = new Date(base); d.setHours(0,0,0,0);
+  const dow = (d.getDay()+6)%7; // 0=Mon ... 6=Sun
+  const start = new Date(d); start.setDate(d.getDate()-dow);
+  const end = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+  return { start, end };
+}
+
+function renderHomeWeek(){
+  const card = document.getElementById('weekCard');
+  const listEl = document.getElementById('weekList');
+  if(!card || !halls || halls.length===0){ if(card) card.style.display='none'; return; }
+
+  const { start, end } = getWeekRange(new Date());
+  const items = halls
+    .filter(h=>h.datetime)
+    .filter(h=>{ const dt = new Date(h.datetime); return dt>=start && dt<=end; })
+    .sort((a,b)=>a.datetime.localeCompare(b.datetime));
+
+  if(items.length===0){ card.style.display='none'; return; }
+
+  card.style.display = '';
+  const days=['일','월','화','수','목','금','토'];
+  listEl.innerHTML = items.map(h=>{
+    const d = new Date(h.datetime);
+    const label = `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div class="week-row">
+      <span class="wd">${label}</span>
+      <span class="wc">${escapeHtml(h.code)}</span>
+      <span class="hall-badge">${h.hall}</span>
+    </div>`;
+  }).join('');
 }
 
 /* ---- detail view ---- */
