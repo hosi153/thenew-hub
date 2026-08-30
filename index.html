@@ -1230,19 +1230,23 @@ function submitPwPrompt(){
   if(pwResolver){ pwResolver(val); pwResolver = null; }
 }
 
-/* Returns true if the entered password matches the item's stored hash */
+/* Master admin password (fallback for entries with no password of their own,
+   and for overriding any entry's own password). SHA-256 hash only stored here. */
+const ADMIN_PW_HASH = 'c6153ba58146cdde8fccdf3f53a0cb964795a906430a7ba428eccd6dac636cdf';
+
+/* Returns true if the entered password matches the item's stored hash, OR the admin master password */
 async function verify(item){
   const pw = await askPassword('비밀번호 확인');
   if(pw===null) return false;
   const h = await hashPw(pw);
-  if(h === item.pwHash){ return true; }
+  if(h === item.pwHash || h === ADMIN_PW_HASH){ return true; }
   document.getElementById('pwOverlay').classList.add('show');
   document.getElementById('pwError').style.display='block';
   const retry = await new Promise(resolve=>{ pwResolver = resolve; });
   document.getElementById('pwOverlay').classList.remove('show');
   if(retry===null) return false;
   const h2 = await hashPw(retry);
-  return h2 === item.pwHash;
+  return h2 === item.pwHash || h2 === ADMIN_PW_HASH;
 }
 
 /* ============ CHAT-MANAGED PATCHES ============
