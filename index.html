@@ -1362,12 +1362,20 @@ function go(page){
 document.getElementById('fab').style.display='none';
 
 /* ============ DEEP LINK ROUTING (for Kakao chatbot commands) ============
-   Opening the shared link with a #hash jumps straight to that tab:
-   #home  #halls  #codes  #partners  #more                                  */
+   Opening the shared link with a #hash jumps straight to that tab, and
+   optionally a sub-target after a slash:
+   #home  #halls  #codes  #partners  #more
+   #more/hallinfo  #more/terms  #more/bouquet  #more/parking             */
 (function(){
   const valid = ['home','halls','codes','partners','more'];
-  const hash = (location.hash || '').replace('#','');
-  if(valid.includes(hash)) go(hash);
+  const raw = (location.hash || '').replace('#','');
+  const [page, sub] = raw.split('/');
+  if(!valid.includes(page)) return;
+  go(page);
+  if(!sub) return;
+  if(page==='more' && ['hallinfo','terms','bouquet','parking'].includes(sub)){
+    setTimeout(()=>openSub(sub), 0);
+  }
 })();
 
 function openPartner(name){
