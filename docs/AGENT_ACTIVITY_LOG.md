@@ -56,6 +56,90 @@
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
 
+---
+
+## 2026-08-31 — Codex 데스크톱 세션
+
+> 아래에 소급 기록된 기존 2단계·3단계 착수 작업 이후에 진행한 후속 스텝입니다.
+
+### 사용자 지시
+- 리팩터링 계획을 한 번에 끝내지 않고 스텝별로 진행
+- 모든 작업을 이 로그에 남겨 다른 에이전트가 이어서 작업할 수 있게 유지
+
+### 이번 스텝 범위
+- `docs/PERFORMANCE_REFACTORING_PLAN.md` 3단계 중 **일정(schedule) 기능의 API·상태·화면 모듈 분리**만 수행
+- 짝꿍코드(codes), 체크리스트(checklist), 인라인 이벤트 제거는 다음 스텝으로 보류
+- 실제 운영 중인 루트 `index.html`은 변경하지 않음
+
+### 사전 확인 및 환경 준비
+- `git status --short --branch`: 시작 시 `main...origin/main`, 변경 없음
+- 기존 `docs/AGENT_ACTIVITY_LOG.md`, `docs/PERFORMANCE_REFACTORING_PLAN.md`, `web/src/main.js`, 테스트 파일을 읽어 이전 작업과 의존성 확인
+- 최초 환경에 `node`/`npm`이 없어 Homebrew로 Node.js `v26.8.1`, npm `11.19.0` 설치
+- `npm ci`로 잠금 파일 기준 의존성 설치. 오프라인 감사 결과가 0건으로 달라 별도 온라인 `npm audit --audit-level=moderate`로 재확인한 결과 취약점 2건(중간 1, 높음 1)이 맞음. `esbuild <=0.24.2` 개발 서버 이슈가 포함되며 자동 해결은 Vite 8.2.2로의 브레이킹 변경을 요구하므로 이번 구조 분리 스텝에서는 `npm audit fix --force`를 실행하지 않음
+- npm 11은 `esbuild@0.21.5`, `fsevents@2.3.3` 설치 스크립트 승인 관련 경고를 출력했지만, Vite 빌드는 정상 실행됨
+
+### 구현 내용
+
+**신규 파일**:
+- `web/src/features/schedule/api.js` (70줄)
+  - `hallSchedule` 컬렉션 존재 확인, seed 저장, 페이지/미정 일정/전체/월 범위 조회 분리
+  - 단일 일정 ID 생성, 저장, 삭제를 공통 Firestore 전송 계층에 연결
+- `web/src/features/schedule/state.js` (41줄)
+  - 일정 목록, 필터, 지난 식 표시, 목록/달력 보기, 편집/상세 ID, 페이지네이션, 월 캐시와 달력 선택 상태를 `scheduleState`로 통합
+  - 목록 교체·중복 없는 추가·캘린더 캐시 초기화 함수 제공
+- `web/src/features/schedule/view.js` (434줄)
+  - 일정 초기화와 seed 폴백, 목록/필터/무한 스크롤, 달력, 이번 주 위젯, 상세/등록/수정/삭제 UI를 이동
+  - 기존 Firestore 필드, PBKDF2 처리, 12초 작업 제한, 낙관적 갱신/실패 원복, 상태 토스트 동작 유지
+
+**변경 파일**:
+- `web/src/main.js`: 1,523줄 → 1,096줄
+  - 일정 기능을 새 모듈에서 import
+  - `halls`, `hallPage`, `hallFilter`, `hallView`, `calMonthCache` 등 일정 전역 상태 제거
+  - 초기화, 네비게이션, 관리자 패치가 `scheduleState`와 일정 모듈의 공개 함수만 사용하도록 변경
+  - 브라우저 스모크 테스트에서 발견된 TDZ 오류를 고치기 위해 `init()` 호출을 파일 상단에서 모든 선언/핸들러 연결 이후인 파일 마지막으로 이동
+- `tests/vite-build.test.mjs`
+  - 일정 기능의 `api.js`/`state.js`/`view.js` 존재와 연결, `main.js`의 과거 일정 전역 상태 제거를 검사하는 회귀 테스트 1개 추가
+- `docs/PERFORMANCE_REFACTORING_PLAN.md`
+  - 3단계 진행 현황을 일정 모듈 분리 완료, codes/checklist 미완료로 갱신
+
+### 검증 기록
+- `git diff --check`: 통과
+- `npm test`: 정적 회귀 테스트 15/15 통과
+- `node --test tests/vite-build.test.mjs`: Vite/구조 테스트 5/5 통과
+- `npm run build`: 성공, 12개 모듈 변환
+  - `dist/index.html` 45.63kB
+  - CSS 19.93kB, JS 49.34kB (해시 자산 생성 확인)
+- 로컬 `vite preview`를 `127.0.0.1:4173`에서 실행하고 인앱 브라우저로 스모크 테스트
+  1. 첫 실행에서 `ReferenceError: Cannot access ... before initialization` 발견
+  2. `init()`을 파일 마지막으로 이동하고 재빌드/새로고침
+  3. 홈 초기 화면 렌더링 확인
+  4. 홀일정 탭 → 2026년 8월 달력과 선택 날짜 빈 상태 렌더링 확인
+  5. 달력 → 목록 전환 확인
+  6. `+` 버튼 → `일정 등록` 모달 열기 → 취소 확인
+  7. 수정된 번들(`index-DyWImJxC.js`)의 콘솔 오류 0건 확인
+- 운영 Firestore 데이터를 바꾸지 않기 위해 실제 등록·수정·삭제 제출은 수행하지 않음
+- 로컬 미리보기 서버와 테스트용 브라우저 탭은 검증 후 종료
+
+### 현재 작업 트리 및 인계 지점
+- 변경 사항은 아직 커밋하지 않음
+- 변경 파일: `docs/PERFORMANCE_REFACTORING_PLAN.md`, `docs/AGENT_ACTIVITY_LOG.md`, `tests/vite-build.test.mjs`, `web/src/main.js`
+- 신규 디렉터리: `web/src/features/schedule/`
+- 다음 권장 스텝: **짝꿍코드(codes) 기능을 `api.js`·`state.js`·`view.js`로 분리**
+- 그 다음: 체크리스트 분리 → 인라인 이벤트 제거 → 기능별 동적 import 검토
+- 다음 에이전트는 먼저 `git diff --check`, `npm test`, `node --test tests/vite-build.test.mjs`, `npm run build`로 기준 상태를 재확인할 것
+
+**커밋**: 미생성 (사용자 지시 없이 커밋하지 않음)
+
+### 커밋·푸시 전 배포 안전성 재점검
+- 사용자 질문: 현재 상태를 커밋·푸시해도 기존 배포에 이상이 없는지 확인
+- 현재 변경 대상은 `docs/`, `tests/`, `web/src/`뿐이며 운영 파일인 루트 `index.html`은 변경되지 않음
+- `.github/workflows`와 별도 `CNAME`/`.nojekyll` 파일 없음
+- 실제 Pages URL `https://hosi153.github.io/thenew-hub/` 응답: HTTP 200, `content-length: 159392`
+- 배포 HTML SHA-256과 로컬 루트 `index.html` SHA-256이 모두 `e530b04cf4cf24fab91a58be88fd3ba84e30ae0adbb71c916db5b99945ab0556`으로 일치
+- 재검증: 정적 테스트 15/15, Vite/구조 테스트 6/6, Vite 프로덕션 빌드, `git diff --check` 모두 통과
+- 결론: 현재 Pages가 루트 `index.html`을 배포하는 구조에서는 커밋·푸시 후 운영 화면/동작이 바뀌지 않음. 새 `web/` 모듈 구조는 6단계 Pages 전환 전까지 운영에 사용되지 않음
+- 제한: 로컬 GitHub CLI 토큰이 만료되어 Pages 설정 API 자체는 조회하지 못했으나, 실제 배포 응답과 로컬 파일의 바이트 단위 일치로 현재 배포 소스를 검증함
+
 
 ### 사용자 확인 (같은 날짜)
 - "반응속도가 월등히 빨라졌어" — 1단계 체감 속도 개선 효과 실기기에서 확인됨
@@ -114,10 +198,79 @@ web/src/main.js는 1830줄 → 1523줄로 축소(약 17% 감소), 남은 부분�
 **작업 중 발견하고 수정한 실수**: 모달 모듈 추출 과정에서 import { toast }와 pwInput keydown 리스너를 실수로 중복 삽입 → 직접 재확인하며 발견해서 제거.
 
 **남은 작업 (다음 라운드)**:
-- 홀 일정(schedule) / 짝꿍코드(codes) / 체크리스트(checklist) 각각을 api·state·view 모듈로 분리
+- 홀 일정(schedule) api·state·view 분리는 위 Codex 후속 스텝에서 완료
+- 짝꿍코드(codes) api·state·view 분리는 아래 Codex 후속 스텝에서 완료
+- 체크리스트(checklist)를 api·state·view 모듈로 분리
 - 인라인 onclick/oninput/onchange를 이벤트 위임 방식으로 교체 (현재는 여전히 32개 함수를 window에 노출하는 임시 방편 사용 중)
 - 전역 상태(halls/codes/checklists/hallFilter/showPast 등)를 기능별 상태 객체로 제한
 
-**검증 한계**: 이번에도 실제 브라우저에서의 시각적/동작 검증은 못함. 정적 빌드·문자열 검색·기존 테스트 통과까지만 확인.
+**당시 검증 한계**: 이 착수 라운드에서는 실제 브라우저 검증을 못했으나, 위 Codex 후속 스텝에서 일정 화면의 브라우저 스모크 테스트를 추가 수행함.
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+---
+
+## 2026-08-31 — Codex 데스크톱 세션 (3단계 계속: 짝꿍코드)
+
+### 사용자 지시
+- 이전 작업을 기록하고 계획의 다음 스텝을 계속 진행
+- 한 번에 전체 단계를 끝내지 않고 기능 단위로 진행
+
+### 이번 스텝 범위
+- 3단계 기능 모듈화 중 **짝꿍코드(codes) 기능의 API·상태·화면 분리**
+- 체크리스트 모듈화와 인라인 이벤트 제거는 다음 스텝으로 보류
+- 운영 루트 `index.html`과 Firestore 데이터 형식은 변경하지 않음
+
+### 사전 확인
+- 기존 미커밋 일정 모듈화 변경을 보존한 상태에서 작업 시작
+- `git status`, `web/src/main.js`의 codes 관련 참조, 기존 활동 로그와 계획 문서 확인
+- 일정 모듈과 같은 공개 경계 및 명명 방식을 사용하기로 결정
+
+### 구현 내용
+
+**신규 파일**:
+- `web/src/features/codes/api.js` (51줄)
+  - `matchingCodes` 컬렉션 존재 확인, seed 저장, 문서 ID 순 페이지 조회, 전체 조회 분리
+  - 새 문서 ID 생성, 단일 저장·삭제를 공통 Firestore 전송 계층에 연결
+- `web/src/features/codes/state.js` (19줄)
+  - 항목, 카테고리 필터, 편집/상세 ID, 페이지네이션, 전체 로딩 상태를 `matchingCodeState`로 통합
+  - 목록 교체와 ID 기준 중복 없는 추가 함수 제공
+- `web/src/features/codes/view.js` (249줄)
+  - 초기화와 seed 폴백, 카테고리 칩, 검색, 전체/페이지 조회, 목록 렌더링을 이동
+  - 상세·등록·수정·삭제 모달과 낙관적 갱신/실패 원복, PBKDF2 및 상태 표시 유지
+
+**변경 파일**:
+- `web/src/main.js`: 1,096줄 → 883줄
+  - codes 모듈과 `matchingCodeState` import
+  - `codes`, `codePage`, `codeFilter`, `editingCodeId`, `viewingCodeId` 등 codes 전역 상태 제거
+  - 초기화, 무한 스크롤, 네비게이션, 관리자 패치가 codes 모듈의 공개 상태/함수만 사용하도록 변경
+  - 일정 데이터가 없어도 짝꿍코드 데이터가 있으면 화면 재렌더링이 가능하도록 공통 재렌더 조건 보완
+- `tests/vite-build.test.mjs`
+  - codes의 api/state/view 파일과 main 연결, 과거 codes 전역 상태 제거를 검증하는 테스트 1개 추가
+- `docs/PERFORMANCE_REFACTORING_PLAN.md`
+  - 일정·짝꿍코드 모듈화 완료, 체크리스트 미완료로 진행 현황 갱신
+
+### 검증 기록
+- `git diff --check`: 통과
+- `npm test`: 정적 회귀 테스트 15/15 통과
+- `node --test tests/vite-build.test.mjs`: Vite/구조 테스트 6/6 통과
+- `npm run build`: 성공, 15개 모듈 변환
+  - `dist/index.html` 45.63kB
+  - CSS 19.93kB, JS 50.31kB
+- 로컬 `vite preview`와 인앱 브라우저 스모크 테스트
+  1. 홈 → 짝꿍코드 탭 이동 및 목록 렌더링 확인
+  2. `스냅` 필터 선택 후 26개 행 렌더링 확인
+  3. 첫 항목(`탐클로이`) 상세 모달 열기/닫기 확인
+  4. `+` 버튼 → `짝꿍코드 등록` 모달 열기/취소 확인
+  5. 현재 번들(`index-fnLfZIWu.js`) 콘솔 오류 0건 확인
+- 운영 데이터 변경 방지를 위해 등록·수정·삭제 제출은 수행하지 않음
+- 미리보기 서버와 테스트용 브라우저 탭은 검증 후 종료
+
+### 현재 작업 트리 및 인계 지점
+- 이번 스텝도 커밋하지 않았으며 이전 일정 모듈화 변경과 함께 작업 트리에 존재
+- 신규 디렉터리: `web/src/features/codes/`, `web/src/features/schedule/`
+- 다음 권장 스텝: **체크리스트(checklist) 기능을 `api.js`·`state.js`·`view.js`로 분리**
+- 체크리스트 분리 후 3개 기능이 모두 자체 상태를 소유하는지 검증하고, 그 다음 인라인 이벤트 제거로 진행
+- 다음 에이전트는 `git diff --check`, `npm test`, `node --test tests/vite-build.test.mjs`, `npm run build`로 시작 상태를 확인할 것
+
+**커밋**: 미생성 (사용자 지시 없이 커밋하지 않음)

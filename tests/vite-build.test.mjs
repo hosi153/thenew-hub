@@ -51,3 +51,33 @@ test('HTML element ids in the Vite entry are unique (same invariant as the live 
   const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
   assert.deepEqual([...new Set(duplicates)], []);
 });
+
+test('stage 3 schedule feature owns its API, state, and view modules', () => {
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  const api = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'api.js'), 'utf8');
+  const state = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'state.js'), 'utf8');
+  const view = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'view.js'), 'utf8');
+
+  assert.match(main, /from '\.\/features\/schedule\/state\.js'/);
+  assert.match(main, /from '\.\/features\/schedule\/view\.js'/);
+  assert.doesNotMatch(main, /let halls\s*=|let hallPage\s*=|let hallFilter\s*=/);
+  assert.match(api, /const COLLECTION = 'hallSchedule'/);
+  assert.match(state, /export const scheduleState/);
+  assert.match(view, /export async function initializeSchedules/);
+  assert.match(view, /document\.getElementById\('hallForm'\)\.addEventListener\('submit'/);
+});
+
+test('stage 3 matching-code feature owns its API, state, and view modules', () => {
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  const api = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'api.js'), 'utf8');
+  const state = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'state.js'), 'utf8');
+  const view = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'view.js'), 'utf8');
+
+  assert.match(main, /from '\.\/features\/codes\/state\.js'/);
+  assert.match(main, /from '\.\/features\/codes\/view\.js'/);
+  assert.doesNotMatch(main, /let codes\s*=|let codePage\s*=|let codeFilter\s*=/);
+  assert.match(api, /const COLLECTION = 'matchingCodes'/);
+  assert.match(state, /export const matchingCodeState/);
+  assert.match(view, /export async function initializeMatchingCodes/);
+  assert.match(view, /document\.getElementById\('codeForm'\)\.addEventListener\('submit'/);
+});
