@@ -306,3 +306,27 @@ Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변�
 ### 다음 단계 (Codex 로그 인계 사항과 동일)
 - 체크리스트(checklist) 기능을 `api.js`/`state.js`/`view.js`로 분리 (schedule/codes와 동일 패턴)
 - 3개 기능 모두 자체 상태를 갖게 된 후, 인라인 이벤트 핸들러의 이벤트 위임 전환 마무리
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — 3단계 마무리: 체크리스트 모듈화
+
+**사용자 지시**: "3단계 이어서 해줘" → Codex가 남긴 인계 사항(체크리스트를 api/state/view로 분리)을 그대로 이어서 완료.
+
+**작업 내용**: 일정(schedule)·짝꿍코드(codes)와 동일한 패턴으로 체크리스트 기능 분리
+- `web/src/features/checklist/state.js` (11줄): `checklistState` 객체 (`items`/`viewingId`/`editingId`) — 페이지네이션 불필요(소규모 컬렉션)라 schedule/codes보다 단순하게 유지
+- `web/src/features/checklist/api.js` (20줄): `loadAllChecklists`/`createChecklistId`/`saveChecklist`/`deleteChecklist`
+- `web/src/features/checklist/view.js` (312줄): `CHECKLIST_TEMPLATE`, 폼 렌더링, 등록/수정/삭제/복사, 공개·비공개 처리 등 기존 로직 전량 이전 (내용 변경 없이 상태 참조만 `checklists`/`viewingChecklistId`/`editingChecklistId` → `checklistState.items`/`.viewingId`/`.editingId`로 치환)
+- `web/src/main.js`: 883줄 → **602줄**로 축소 (약 32% 추가 감소, 최초 1830줄 대비 누적 약 67% 감소)
+
+**검증**:
+- `npm run build` 성공, 18개 모듈 변환
+- 빌드 결과물 실서빙 후 `window.ckToggleSkip=`, `window.copyChecklist=` 등 존재 확인, `발산 더뉴컨벤션`(체크리스트 기본값) 문자열 존재로 템플릿 데이터 보존 확인
+- 인라인 핸들러 32개 전역노출 **전수 재검증 → 32/32 통과** (schedule/codes 분리 때와 동일한 검증 스크립트 재사용)
+- `tests/vite-build.test.mjs`에 checklist 전용 회귀 테스트 1개 추가 (schedule/codes 테스트와 동일 패턴)
+- **전체 22개 테스트 통과** (기존 21개 + 신규 1개)
+- `docs/PERFORMANCE_REFACTORING_PLAN.md` 갱신: 3단계를 "✅ 완료"로 표시, 세부 체크리스트 항목 중 checklist 분리 항목도 `[x]`로 변경
+
+**3단계 최종 상태**: 계획 문서의 3단계 항목 중 "Firebase/REST·비밀번호·모달·토스트 공통 분리"와 "일정·짝꿍코드·체크리스트 기능별 api·state·view 분리"는 **완료**. 남은 세부 항목(Firebase compat → modular API 전환, 인라인 핸들러 전면 이벤트 위임화, 동적 import를 통한 지연 로딩)은 미착수 — 3단계를 "완료"로 표시했지만 이 세부 항목들은 4~5단계 작업과 자연스럽게 겹치므로 이후 단계에서 함께 다룰 수 있음.
+
+**운영 영향**: 이번에도 루트 `index.html` 미변경, `git status`로 확인.
+
+**커밋**: (아래 실제 커밋 해시로 갱신)

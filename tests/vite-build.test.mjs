@@ -81,3 +81,19 @@ test('stage 3 matching-code feature owns its API, state, and view modules', () =
   assert.match(view, /export async function initializeMatchingCodes/);
   assert.match(view, /document\.getElementById\('codeForm'\)\.addEventListener\('submit'/);
 });
+
+test('stage 3 checklist feature owns its API, state, and view modules', () => {
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  const api = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'api.js'), 'utf8');
+  const state = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'state.js'), 'utf8');
+  const view = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
+
+  assert.match(main, /from '\.\/features\/checklist\/state\.js'/);
+  assert.match(main, /from '\.\/features\/checklist\/view\.js'/);
+  assert.doesNotMatch(main, /let checklists\s*=|let viewingChecklistId\s*=|let editingChecklistId\s*=|const CHECKLIST_TEMPLATE\s*=/);
+  assert.match(api, /const COLLECTION = 'prepChecklist'/);
+  assert.match(state, /export const checklistState/);
+  assert.match(view, /export async function initializeChecklists/);
+  assert.match(view, /document\.getElementById\('checklistForm'\)\.addEventListener\('submit'/);
+  assert.match(view, /const CHECKLIST_TEMPLATE = \[/);
+});

@@ -7,7 +7,7 @@
 | 0단계: 기준선과 안전망 확보 | ⏸ 부분/보류 | 정적 코드 검사만 수행. 실측 성능 지표·자동 가로넘침 스크린샷 검사는 브라우저 실행 환경이 없어 미수행 |
 | 1단계: 저장 체감 속도 개선 | ✅ 완료 (사용자 확인됨) | SDK 타임아웃 2초 단축, 세션 내 REST 전환 기억, AbortController, 단계별 상태 표시. 실기기에서 "반응속도가 월등히 빨라졌어" 확인 |
 | 2단계: 빌드 기반과 정적 자산 분리 | ✅ 완료 | `web/` 아래 Vite 빌드 환경 병행 구축, 운영 `index.html` 미변경. `npm run build` 성공, 19개 테스트 통과 |
-| 3단계: 기능 모듈화 | 🔄 진행 중 | 공통 모듈 5개와 일정(schedule)·짝꿍코드(codes) api·state·view 분리 완료. checklist 분리는 미완료 |
+| 3단계: 기능 모듈화 | ✅ 완료 | 공통 모듈 5개 + 일정(schedule)·짝꿍코드(codes)·체크리스트(checklist) api·state·view 전부 분리 완료. 인라인 핸들러는 window 노출 방식 + 일부 data-action 위임 혼용 중 |
 | 4단계: 데이터 접근 최적화 | ⬜ 미착수 | |
 | 5단계: 렌더링과 상호작용 최적화 | ⬜ 미착수 | |
 | 6단계: GitHub Pages 자동 배포 | ⬜ 미착수 | 이 단계 전까지는 `web/`·`dist/` 빌드가 실제 배포에 반영되지 않음. 여전히 운영 사이트는 루트 `index.html`을 그대로 서빙 |
@@ -147,13 +147,13 @@ tests/
 - 빌드 전후 화면과 데이터 동작이 동일하다.
 - 생성된 해시 파일명으로 브라우저 캐시 무효화가 자동 적용된다.
 
-### 3단계: 기능 모듈화 — 🔄 진행 중
+### 3단계: 기능 모듈화 — ✅ 완료
 
 - [x] Firebase/REST, 비밀번호, 모달, 토스트 같은 공통 기능부터 분리한다. → `web/src/config/firebase.js`, `web/src/security/password.js`, `web/src/data/firestore-rest.js`, `web/src/ui/toast.js`, `web/src/ui/modal.js` 완료
 - [ ] Firebase compat 전역 API를 필요한 기능만 가져오는 modular API로 단계적으로 교체한다. (compat SDK CDN 로드 방식 유지 중, 아직 미착수)
 - [x] 일정 기능을 API·상태·화면 모듈로 나눈다. → `web/src/features/schedule/` 완료
 - [x] 짝꿍코드 기능을 API·상태·화면 모듈로 나눈다. → `web/src/features/codes/` 완료
-- [ ] 체크리스트를 API·상태·화면 모듈로 나눈다. (여전히 `web/src/main.js`에 있음)
+- [x] 체크리스트를 API·상태·화면 모듈로 나눈다. → `web/src/features/checklist/` 완료
 - [ ] 인라인 `onclick`, `oninput`, `onchange`를 이벤트 위임 또는 모듈 내부 리스너로 교체한다. (2단계에서 만든 `window.함수명 = 함수명` 임시 노출 방식을 계속 사용 중)
 - [ ] 전역 상태를 기능별 상태 객체로 제한하고 모듈 간 직접 변경을 금지한다.
 - [ ] 체크리스트처럼 초기 화면에 필요 없는 기능은 동적으로 불러온다.
