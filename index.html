@@ -360,23 +360,27 @@
   .week-row .wd{ font-weight:800; font-size:13px; min-width:74px; color:var(--accent-deep); }
   .week-row .wc{ font-weight:700; font-size:13px; flex:1; }
 
-  /* ---------- Checklist form table ---------- */
-  #checklistFormTable .ck-section-row td{
-    font-weight:800; font-size:12.5px; padding:12px 6px 6px; border-top:none; color:var(--accent-deep);
+  /* ---------- Checklist form (stacked rows, mobile-safe) ---------- */
+  #checklistFormTable .ck-section-h{
+    font-weight:800; font-size:12.5px; color:var(--accent-deep); margin:16px 0 8px;
   }
-  #checklistFormTable .ck-label-cell{ width:38%; font-size:12.5px; color:var(--ink-soft); vertical-align:middle; }
-  #checklistFormTable .ck-input-cell{ padding:5px 4px; }
-  #checklistFormTable .ck-input-row{ display:flex; gap:6px; align-items:center; }
+  #checklistFormTable .ck-section-h:first-child{ margin-top:0; }
+  #checklistFormTable .ck-row{ margin-bottom:10px; }
+  #checklistFormTable .ck-row label{
+    display:block; font-size:12px; color:var(--ink-soft); margin-bottom:5px; font-weight:600;
+  }
+  #checklistFormTable .ck-input-row{ display:flex; gap:6px; align-items:stretch; width:100%; }
   #checklistFormTable .ck-input-row input{
-    flex:1; min-width:0; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--border);
-    background:var(--surface-input); color:var(--ink); font-size:12.5px; font-family:inherit;
+    flex:1 1 auto; min-width:0; width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:var(--surface-input); color:var(--ink); font-size:13px; font-family:inherit; box-sizing:border-box;
   }
   #checklistFormTable .ck-skip-btn{
-    flex-shrink:0; padding:8px 9px; border-radius:var(--radius-sm); border:1px solid var(--border);
-    background:var(--surface-input); color:var(--ink-soft); font-size:11px; font-weight:700; cursor:pointer;
+    flex:0 0 auto; padding:0 12px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:var(--surface-input); color:var(--ink-soft); font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap;
   }
   #checklistFormTable .ck-skip-btn.on{ background:var(--neutral-tint); color:var(--ink); border-color:var(--border-strong); }
-  #checklistDetailTable td:first-child{ color:var(--ink-soft); white-space:nowrap; }
+  #checklistDetailTable td:first-child{ color:var(--ink-soft); white-space:normal; width:42%; }
+  #checklistDetailTable td{ word-break:break-word; }
 
   /* ---------- Bottom nav: floating glass capsule, scroll-reactive ---------- */
   nav.bottom{
@@ -1148,8 +1152,8 @@
         <span>공개로 전환 (켜면 누구나 볼 수 있어요 · 끄면 비밀번호를 아는 사람만 볼 수 있어요)</span>
       </label>
 
-      <div class="table-wrap" style="max-height:42vh; overflow-y:auto; margin-bottom:14px;">
-        <table class="data" id="checklistFormTable" style="margin:0;"></table>
+      <div style="max-height:42vh; overflow-y:auto; overflow-x:hidden; margin-bottom:14px; padding-right:2px;">
+        <div id="checklistFormTable"></div>
       </div>
 
       <div class="field" id="ck_pw_field">
@@ -2005,25 +2009,24 @@ async function saveChecklists(){
   }catch(e){ toast('저장 중 문제가 발생했어요'); }
 }
 
-/* ---- build the input table once (static template) ---- */
+/* ---- build the input rows once (static template) ---- */
 function buildChecklistFormTable(){
   const el = document.getElementById('checklistFormTable');
-  let rows = '';
+  let html = '';
   CHECKLIST_TEMPLATE.forEach(sec=>{
-    rows += `<tr class="ck-section-row"><td colspan="2">${sec.section}</td></tr>`;
+    html += `<div class="ck-section-h">${sec.section}</div>`;
     sec.items.forEach(it=>{
-      rows += `<tr>
-        <td class="ck-label-cell">${it.emoji?it.emoji+' ':''}${escapeHtml(it.label)}</td>
-        <td class="ck-input-cell">
-          <div class="ck-input-row">
-            <input type="text" id="ck_item_${it.key}" placeholder="입력...">
-            <button type="button" class="ck-skip-btn" id="ck_skip_${it.key}" onclick="ckToggleSkip('${it.key}')">안함</button>
-          </div>
-        </td>
-      </tr>`;
+      html += `
+      <div class="ck-row">
+        <label>${it.emoji?it.emoji+' ':''}${escapeHtml(it.label)}</label>
+        <div class="ck-input-row">
+          <input type="text" id="ck_item_${it.key}" placeholder="입력...">
+          <button type="button" class="ck-skip-btn" id="ck_skip_${it.key}" onclick="ckToggleSkip('${it.key}')">안함</button>
+        </div>
+      </div>`;
     });
   });
-  el.innerHTML = rows;
+  el.innerHTML = html;
 }
 buildChecklistFormTable();
 
