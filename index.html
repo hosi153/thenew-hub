@@ -258,6 +258,17 @@
   .field input[type="datetime-local"]::-webkit-date-and-time-value{
     min-width:0; text-align:left;
   }
+  .datetime-fields{
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;
+    width:100%; min-width:0; max-width:100%; margin-bottom:14px;
+  }
+  .datetime-fields .field{ min-width:0; margin-bottom:0; overflow:hidden; }
+  .datetime-fields input[type="date"], .datetime-fields input[type="time"]{
+    -webkit-appearance:none; appearance:none;
+  }
+  @media (max-width:420px){
+    .datetime-fields{ grid-template-columns:minmax(0,1fr); }
+  }
   .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--accent); }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .modal .actions{ display:flex; gap:10px; margin-top:18px; }
@@ -1045,9 +1056,15 @@
           <option value="르노브홀">르노브홀</option>
         </select>
       </div>
-      <div class="field">
-        <label for="h_datetime">예식 날짜 · 시간 <span class="req">*</span></label>
-        <input type="datetime-local" id="h_datetime" required>
+      <div class="datetime-fields">
+        <div class="field">
+          <label for="h_date">예식 날짜 <span class="req">*</span></label>
+          <input type="date" id="h_date" required>
+        </div>
+        <div class="field">
+          <label for="h_time">예식 시간 <span class="req">*</span></label>
+          <input type="time" id="h_time" required>
+        </div>
       </div>
       <div class="field">
         <label for="h_memo">메모</label>
@@ -2333,7 +2350,9 @@ function openHallModal(id){
     document.getElementById('h_hall').value = h.hall;
     document.getElementById('h_memo').value = h.memo || '';
     if(h.datetime){
-      document.getElementById('h_datetime').value = h.datetime;
+      const [dateValue='', timeValue=''] = (h.datetime || '').split('T');
+      document.getElementById('h_date').value = dateValue;
+      document.getElementById('h_time').value = timeValue.slice(0,5);
     }
   }
   showOverlay('hallOverlay');
@@ -2345,7 +2364,9 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
   const code = document.getElementById('h_code').value.trim();
   const hall = document.getElementById('h_hall').value;
   const memo = document.getElementById('h_memo').value.trim();
-  const datetime = document.getElementById('h_datetime').value || '';
+  const date = document.getElementById('h_date').value || '';
+  const time = document.getElementById('h_time').value || '';
+  const datetime = date && time ? `${date}T${time}` : '';
 
   const submitBtn = document.querySelector('#hallForm button[type="submit"]');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }

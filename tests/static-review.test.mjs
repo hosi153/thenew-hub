@@ -48,3 +48,11 @@ test('every modal exposes dialog semantics', () => {
 test('external HTTP links are not present', () => {
   assert.doesNotMatch(html, /href="http:\/\//);
 });
+
+test('hall schedule uses separate mobile-safe date and time controls', () => {
+  assert.match(html, /id="h_date"[^>]*type="date"|type="date"[^>]*id="h_date"/);
+  assert.match(html, /id="h_time"[^>]*type="time"|type="time"[^>]*id="h_time"/);
+  assert.doesNotMatch(html, /id="h_datetime"/);
+  assert.match(html, /@media \(max-width:420px\)[\s\S]*?\.datetime-fields\{ grid-template-columns:minmax\(0,1fr\); \}/);
+  assert.match(appScript, /const datetime = date && time \? `\$\{date\}T\$\{time\}` : '';/);
+});
