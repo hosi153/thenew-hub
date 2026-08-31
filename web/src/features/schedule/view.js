@@ -151,6 +151,15 @@ export function retryLoadHalls(){
   else loadMoreHalls();
 }
 
+/* Whichever view (list or calendar) is actually on screen right now needs
+   to be re-rendered after a save/delete — calling renderHalls() alone left
+   the calendar showing stale data whenever it was the active view (it's the
+   default view), which looked like "you have to refresh to see your save". */
+function refreshHallView(){
+  renderHalls();
+  if(scheduleState.view==='calendar') renderCalendar();
+}
+
 export function renderHalls(){
   const query = document.getElementById('hallSearch').value.trim().toLowerCase();
   const needsFullData = !!query || scheduleState.filter!=='전체' || scheduleState.showPast;
@@ -364,7 +373,7 @@ export async function requestDeleteHall(){
   scheduleState.items = scheduleState.items.filter(candidate=>candidate.id!==targetId);
   resetScheduleCalendarCache();
   closeHallDetail();
-  renderHalls();
+  refreshHallView();
   toast('삭제되었습니다');
 }
 
@@ -434,6 +443,6 @@ document.getElementById('hallForm').addEventListener('submit', async event=>{
   }
   closeHallModal();
   resetScheduleCalendarCache();
-  renderHalls();
+  refreshHallView();
   toast('저장되었습니다');
 });

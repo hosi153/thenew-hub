@@ -422,3 +422,27 @@ Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변�
 **운영 영향**: 실제로 배포되어 문제를 일으킨 최적화를 되돌리는 것이라 즉시 push. 검색 디바운스 등 나머지 5단계 변경사항은 그대로 유지.
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — 진짜 원인 발견: 저장 후 새로고침해야 보이던 버그
+
+**사용자 리포트**: 메모이제이션 롤백 배포 후에도 "아직도 새로고침 해야해" — 이전 조치가 원인을 잘못 짚었음이 확인됨.
+
+**재조사 결과 — 진짜 원인**: 캘린더가 홀 일정의 **기본 뷰**로 설정되어 있는데(`scheduleState.view = 'calendar'`, Codex의 "일정 캘린더 보기를 기본값으로 변경" 커밋), 저장/수정/삭제 완료 처리부가 `renderHalls()`(목록 뷰)만 호출하고 `renderCalendar()`(캘린더 뷰)는 호출하지 않고 있었음. 즉 대부분의 사용자가 기본으로 보게 되는 캘린더 화면은 저장해도 절대 갱신되지 않는 구조였고, 새로고침해야 `init()`이 다시 실행되며 캘린더가 새로 그려져서 반영된 것처럼 보였던 것.
+
+**비교로 확인한 것**: `applyPatches()`(관리자 채팅 패치, main.js)와 `go()`(탭 전환, main.js)는 이미 `if(...view==='calendar') renderCalendar();` 패턴을 올바르게 쓰고 있었음 — 오직 `schedule/view.js`의 저장(hallForm submit)·삭제(requestDeleteHall) 두 곳만 이 패턴이 누락되어 있었음.
+
+**수정**:
+- `web/src/features/schedule/view.js`에 `refreshHallView()` 헬퍼 추가: `renderHalls()` 호출 후 `scheduleState.view==='calendar'`이면 `renderCalendar()`도 호출
+- `requestDeleteHall()`과 hallForm submit 핸들러의 `renderHalls();` 호출을 `refreshHallView();`로 교체
+- `tests/vite-build.test.mjs`에 회귀 테스트 추가: 저장/삭제 완료부에 `refreshHallView()`가 쓰이는지, 그 헬퍼가 실제로 뷰에 따라 `renderCalendar()`를 호출하는 로직을 담고 있는지 정적 검증
+
+**검증**:
+- `npm run build` 성공 (20개 모듈)
+- **전체 31개 테스트 통과** (기존 30개 + 신규 1개)
+- 참고: `refreshHallView`는 export되지 않은 내부 함수라 빌드 압축(minify) 시 이름이 바뀔 수 있어, 빌드 결과물에서 문자열로 직접 검색하는 방식의 검증은 이번엔 사용하지 않고 소스 레벨 정적 테스트로 대체함
+
+**교훈**: 첫 조치(메모이제이션 롤백)는 "가장 최근에 추가된 코드"라는 정황 증거만으로 판단해 틀렸음. 다음부터는 가능하면 실제 상태 흐름(어떤 뷰가 기본값이고, 그 뷰의 렌더 함수가 실제로 호출되는지)을 더 먼저 추적했어야 함.
+
+**운영 영향**: 이번엔 실제 버그 수정. 즉시 push.
+
+**커밋**: (아래 실제 커밋 해시로 갱신)

@@ -221,3 +221,22 @@ test('stage 5: modal focus management, keyboard handling, and reduced-motion are
   const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
   assert.match(css, /prefers-reduced-motion\s*:\s*reduce/);
 });
+
+test('bugfix: saving/deleting a hall schedule refreshes whichever view (list or calendar) is actually on screen', () => {
+  // Calendar is the default schedule view. renderHalls() alone only updates
+  // the (possibly hidden) list markup — if renderCalendar() isn't also
+  // called when the calendar is the active view, a save/delete looks like
+  // it silently did nothing until the page is manually reloaded.
+  const scheduleView = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'view.js'), 'utf8');
+  assert.match(scheduleView, /function refreshHallView\(\)\{[\s\S]*?renderHalls\(\);[\s\S]*?if\(scheduleState\.view==='calendar'\) renderCalendar\(\);[\s\S]*?\}/);
+
+  const deleteBody = scheduleView.slice(
+    scheduleView.indexOf('export async function requestDeleteHall()'),
+    scheduleView.indexOf('export function openHallModal'),
+  );
+  assert.match(deleteBody, /refreshHallView\(\);/);
+  assert.doesNotMatch(deleteBody, /\brenderHalls\(\);/);
+
+  const submitBody = scheduleView.slice(scheduleView.indexOf("addEventListener('submit'"));
+  assert.match(submitBody, /refreshHallView\(\);/);
+});
