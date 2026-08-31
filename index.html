@@ -1647,19 +1647,29 @@ async function applyPatches(){
 
   for(const p of pending){
     const list = p.target==='hall' ? halls : codes;
+    const collection = p.target==='hall' ? 'hallSchedule' : 'matchingCodes';
     if(p.type==='delete'){
       const idx = list.findIndex(x=>x.id===p.matchId);
-      if(idx>-1) list.splice(idx,1);
+      if(idx>-1){
+        list.splice(idx,1);
+        await deleteWithFallback(collection, p.matchId);
+      }
     }else if(p.type==='edit'){
       const idx = list.findIndex(x=>x.id===p.matchId);
-      if(idx>-1) Object.assign(list[idx], p.changes);
+      if(idx>-1){
+        Object.assign(list[idx], p.changes);
+        const { id, ...data } = list[idx];
+        await writeWithFallback(collection, id, data);
+      }
     }else if(p.type==='add'){
-      list.push({ id:(p.target==='hall'?'h_':'c_')+'patch_'+p.id, ...p.item });
+      const newId = (p.target==='hall'?'h_':'c_')+'patch_'+p.id;
+      const item = { id:newId, ...p.item };
+      list.push(item);
+      const { id, ...data } = item;
+      await writeWithFallback(collection, id, data);
     }
     applied.push(p.id);
   }
-  await saveHalls();
-  await saveCodes();
   try{ await db.collection('meta').doc('appliedPatches').set({ids: applied}); }catch(e){}
 }
 
@@ -1725,34 +1735,8 @@ async function init(){
    actions so we don't have to re-fetch and rewrite the whole collection every time. */
 async function saveHallSingle(id, data){ return writeWithFallback('hallSchedule', id, data); }
 async function deleteHallSingle(id){ return deleteWithFallback('hallSchedule', id); }
-
-async function saveHalls(){
-  try{
-    const snap = await db.collection('hallSchedule').get();
-    const remoteIds = snap.docs.map(d=>d.id);
-    const localIds = halls.map(h=>h.id);
-    const batch = db.batch();
-    halls.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
-    remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('hallSchedule').doc(id)) );
-    await batch.commit();
-    return {ok:true};
-  }catch(e){ console.error('saveHalls failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
-}
 async function saveCodeSingle(id, data){ return writeWithFallback('matchingCodes', id, data); }
 async function deleteCodeSingle(id){ return deleteWithFallback('matchingCodes', id); }
-
-async function saveCodes(){
-  try{
-    const snap = await db.collection('matchingCodes').get();
-    const remoteIds = snap.docs.map(d=>d.id);
-    const localIds = codes.map(c=>c.id);
-    const batch = db.batch();
-    codes.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
-    remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('matchingCodes').doc(id)) );
-    await batch.commit();
-    return {ok:true};
-  }catch(e){ console.error('saveCodes failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
-}
 
 function toast(msg, ms){
   const t = document.getElementById('toast');
@@ -2239,19 +2223,6 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
 /* ============ WEDDING PREP CHECKLIST ============ */
 async function saveChecklistSingle(id, data){ return writeWithFallback('prepChecklist', id, data); }
 async function deleteChecklistSingle(id){ return deleteWithFallback('prepChecklist', id); }
-
-async function saveChecklists(){
-  try{
-    const snap = await db.collection('prepChecklist').get();
-    const remoteIds = snap.docs.map(d=>d.id);
-    const localIds = checklists.map(c=>c.id);
-    const batch = db.batch();
-    checklists.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('prepChecklist').doc(id), data); });
-    remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('prepChecklist').doc(id)) );
-    await batch.commit();
-    return {ok:true};
-  }catch(e){ console.error('saveChecklists failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
-}
 
 /* ---- build the input rows once (static template) ---- */
 function buildChecklistFormTable(){
