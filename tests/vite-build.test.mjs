@@ -240,3 +240,12 @@ test('bugfix: saving/deleting a hall schedule refreshes whichever view (list or 
   const submitBody = scheduleView.slice(scheduleView.indexOf("addEventListener('submit'"));
   assert.match(submitBody, /refreshHallView\(\);/);
 });
+
+test('bugfix: the floating "+" button does not cover list content on the pages it appears on', () => {
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  // The FAB is fixed at bottom:150px and is 54px tall, so it occupies the
+  // 150-204px band above the viewport bottom. The two pages it shows on
+  // need extra bottom clearance beyond the base nav padding so a fully
+  // scrolled list doesn't end up hidden behind it.
+  assert.match(css, /#page-halls,\s*#page-codes\{\s*padding-bottom:90px;\s*\}/);
+});

@@ -183,6 +183,13 @@
   .fab:active{ transform:scale(0.93); }
   .fab.nav-compact-shift{ bottom:calc(120px + env(safe-area-inset-bottom)); }
 
+  /* The floating "+" button only appears on the schedule and matching-code
+     pages, and is positioned high enough (bottom:150px, 54px tall) that the
+     body's general nav-clearance padding isn't quite enough — the last row
+     of a scrolled-to-bottom list could end up hidden behind it. Give just
+     these two pages extra breathing room instead of padding every page. */
+  #page-halls, #page-codes{ padding-bottom:90px; }
+
   /* ---------- Filter chips ---------- */
   .chiprow{ display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; padding-bottom:2px; }
   .chip{
