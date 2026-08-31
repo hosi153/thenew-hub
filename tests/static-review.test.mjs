@@ -86,3 +86,29 @@ test('YELOVE partner entry, benefits, products, and links are present', () => {
   assert.match(html, /https:\/\/pf\.kakao\.com\/_fxlswn/);
   assert.match(html, /https:\/\/www\.instagram\.com\/yelove_wedding/);
 });
+
+test('perf plan stage 1: SDK attempt budget is short and REST fallback remembers session state', () => {
+  assert.match(appScript, /const SDK_ATTEMPT_MS = 2000;/);
+  assert.match(appScript, /const REST_ATTEMPT_MS = 8000;/);
+  assert.match(appScript, /let sdkTransportBlocked = false;/);
+  // once the SDK is marked blocked, later calls must skip straight to REST
+  assert.match(appScript, /if\(!sdkTransportBlocked\)\{[\s\S]*?sdkTransportBlocked = true;/);
+});
+
+test('perf plan stage 1: REST requests use AbortController instead of a dangling timer', () => {
+  assert.match(appScript, /function withAbortTimeout\(ms\)\{/);
+  assert.match(appScript, /new AbortController\(\)/);
+  assert.match(appScript, /signal: controller\.signal/);
+  assert.match(appScript, /fetch\(url, \{[\s\S]*?signal\s*\}\)|fetch\(url, \{signal\}\)/);
+});
+
+test('perf plan stage 1: REST error responses are classified into Firestore-style codes', () => {
+  assert.match(appScript, /function classifyRestError\(status, bodyText\)\{/);
+  assert.match(appScript, /code = 'permission-denied'/);
+  assert.match(appScript, /code = 'resource-exhausted'/);
+});
+
+test('perf plan stage 1: save/delete flows surface staged status text', () => {
+  assert.match(appScript, /'비밀번호 처리 중'/);
+  assert.match(appScript, /'연결 재시도 중'/);
+});

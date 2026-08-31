@@ -1642,6 +1642,33 @@ let viewingCodeId = null;
    forever instead of failing fast. As a fallback, we can talk to Firestore over
    plain HTTPS via its REST API, which behaves like any normal fetch() request and
    is far less likely to be specifically blocked. */
+
+/* ---- Transport tuning (perf refactor plan, stage 1) ----
+   Once the SDK's realtime channel proves unreachable this session, skip
+   straight to REST for subsequent calls instead of re-paying a fresh SDK
+   timeout every single time. */
+let sdkTransportBlocked = false;
+const SDK_ATTEMPT_MS = 2000;
+const REST_ATTEMPT_MS = 8000;
+
+function withAbortTimeout(ms){
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), ms);
+  return { signal: controller.signal, clear: ()=>clearTimeout(timer) };
+}
+/* Best-effort mapping from an HTTP status to a Firestore-style error code, so
+   callers can distinguish "no permission" from "network unreachable" etc. */
+function classifyRestError(status, bodyText){
+  let code = 'unknown';
+  if(status===403) code = 'permission-denied';
+  else if(status===404) code = 'not-found';
+  else if(status===429) code = 'resource-exhausted';
+  else if(status>=500) code = 'unavailable';
+  const err = new Error(`rest-${status}${bodyText ? ': '+bodyText.slice(0,150) : ''}`);
+  err.code = code;
+  return err;
+}
+
 function toFirestoreValue(v){
   if(v === null || v === undefined) return {nullValue: null};
   if(typeof v === 'boolean') return {booleanValue: v};
@@ -1657,69 +1684,100 @@ function toFirestoreFields(obj){
   return fields;
 }
 async function firestoreRestSet(collection, docId, data){
-  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${firebaseConfig.apiKey}`;
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ fields: toFirestoreFields(data) })
-  });
-  if(!res.ok){ const t = await res.text().catch(()=> ''); throw new Error('rest-'+res.status+(t?(': '+t.slice(0,150)):'')); }
+  const {signal, clear} = withAbortTimeout(REST_ATTEMPT_MS);
+  try{
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${firebaseConfig.apiKey}`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fields: toFirestoreFields(data) }),
+      signal
+    });
+    if(!res.ok){ const t = await res.text().catch(()=> ''); throw classifyRestError(res.status, t); }
+  }finally{ clear(); }
 }
 async function firestoreRestDelete(collection, docId){
-  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${firebaseConfig.apiKey}`;
-  const res = await fetch(url, { method: 'DELETE' });
-  if(!res.ok){ const t = await res.text().catch(()=> ''); throw new Error('rest-'+res.status+(t?(': '+t.slice(0,150)):'')); }
-}
-/* Try the SDK first (fast path); if it fails or hangs, fall back to plain REST. */
-async function writeWithFallback(collection, docId, data){
+  const {signal, clear} = withAbortTimeout(REST_ATTEMPT_MS);
   try{
-    await withTimeout(db.collection(collection).doc(docId).set(data), 7000);
-    return {ok:true};
-  }catch(e1){
-    console.warn(`SDK write to ${collection}/${docId} failed, trying REST fallback:`, e1);
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${firebaseConfig.apiKey}`;
+    const res = await fetch(url, { method: 'DELETE', signal });
+    if(!res.ok){ const t = await res.text().catch(()=> ''); throw classifyRestError(res.status, t); }
+  }finally{ clear(); }
+}
+async function firestoreRestMerge(collection, docId, changes){
+  const {signal, clear} = withAbortTimeout(REST_ATTEMPT_MS);
+  try{
+    const mask = Object.keys(changes).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?${mask}&key=${firebaseConfig.apiKey}`;
+    const res = await fetch(url, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({fields: toFirestoreFields(changes)}), signal });
+    if(!res.ok){ const t = await res.text().catch(()=> ''); throw classifyRestError(res.status, t); }
+  }finally{ clear(); }
+}
+
+/* Try the SDK first (fast path, short budget); if it fails or hangs, switch
+   this session to REST and use it for the rest of the session too, so we
+   don't keep re-paying a losing SDK attempt on every subsequent call. */
+async function writeWithFallback(collection, docId, data, onStatus){
+  if(!sdkTransportBlocked){
     try{
-      await withTimeout(firestoreRestSet(collection, docId, data), 10000);
+      if(onStatus) onStatus('저장 중');
+      await withTimeout(db.collection(collection).doc(docId).set(data), SDK_ATTEMPT_MS);
       return {ok:true};
-    }catch(e2){
-      console.error('REST fallback write also failed:', e2);
-      return {ok:false, error:(e2 && e2.message) || String(e2)};
+    }catch(e1){
+      console.warn(`SDK write to ${collection}/${docId} failed, switching to REST for this session:`, e1);
+      sdkTransportBlocked = true;
     }
   }
-}
-async function deleteWithFallback(collection, docId){
   try{
-    await withTimeout(db.collection(collection).doc(docId).delete(), 7000);
+    if(onStatus) onStatus('연결 재시도 중');
+    await firestoreRestSet(collection, docId, data);
     return {ok:true};
-  }catch(e1){
-    console.warn(`SDK delete of ${collection}/${docId} failed, trying REST fallback:`, e1);
+  }catch(e2){
+    console.error('REST fallback write failed:', e2);
+    return {ok:false, error:(e2 && e2.message) || String(e2), code: e2 && e2.code};
+  }
+}
+async function deleteWithFallback(collection, docId, onStatus){
+  if(!sdkTransportBlocked){
     try{
-      await withTimeout(firestoreRestDelete(collection, docId), 10000);
+      if(onStatus) onStatus('삭제 중');
+      await withTimeout(db.collection(collection).doc(docId).delete(), SDK_ATTEMPT_MS);
       return {ok:true};
-    }catch(e2){
-      console.error('REST fallback delete also failed:', e2);
-      return {ok:false, error:(e2 && e2.message) || String(e2)};
+    }catch(e1){
+      console.warn(`SDK delete of ${collection}/${docId} failed, switching to REST for this session:`, e1);
+      sdkTransportBlocked = true;
     }
+  }
+  try{
+    if(onStatus) onStatus('연결 재시도 중');
+    await firestoreRestDelete(collection, docId);
+    return {ok:true};
+  }catch(e2){
+    console.error('REST fallback delete failed:', e2);
+    return {ok:false, error:(e2 && e2.message) || String(e2), code: e2 && e2.code};
   }
 }
 /* Partial-field update (merge) — doesn't require the full document to already
    be loaded locally. Used by admin patches so they work correctly even when
    the target document isn't part of the currently-paginated data in memory. */
-async function mergeWithFallback(collection, docId, changes){
-  try{
-    await withTimeout(db.collection(collection).doc(docId).set(changes, {merge:true}), 7000);
-    return {ok:true};
-  }catch(e1){
-    console.warn(`SDK merge to ${collection}/${docId} failed, trying REST fallback:`, e1);
+async function mergeWithFallback(collection, docId, changes, onStatus){
+  if(!sdkTransportBlocked){
     try{
-      const mask = Object.keys(changes).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
-      const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?${mask}&key=${firebaseConfig.apiKey}`;
-      const res = await fetch(url, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({fields: toFirestoreFields(changes)}) });
-      if(!res.ok){ const t = await res.text().catch(()=> ''); throw new Error('rest-'+res.status+(t?(': '+t.slice(0,150)):'')); }
+      if(onStatus) onStatus('저장 중');
+      await withTimeout(db.collection(collection).doc(docId).set(changes, {merge:true}), SDK_ATTEMPT_MS);
       return {ok:true};
-    }catch(e2){
-      console.error('REST fallback merge also failed:', e2);
-      return {ok:false, error:(e2 && e2.message) || String(e2)};
+    }catch(e1){
+      console.warn(`SDK merge to ${collection}/${docId} failed, switching to REST for this session:`, e1);
+      sdkTransportBlocked = true;
     }
+  }
+  try{
+    if(onStatus) onStatus('연결 재시도 중');
+    await firestoreRestMerge(collection, docId, changes);
+    return {ok:true};
+  }catch(e2){
+    console.error('REST fallback merge failed:', e2);
+    return {ok:false, error:(e2 && e2.message) || String(e2), code: e2 && e2.code};
   }
 }
 
@@ -1743,29 +1801,36 @@ async function firestoreRestList(collection){
   const documents = [];
   let pageToken = '';
   do{
-    const params = new URLSearchParams({pageSize:'300', key:firebaseConfig.apiKey});
-    if(pageToken) params.set('pageToken', pageToken);
-    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}?${params}`;
-    const res = await fetch(url);
-    if(!res.ok){ throw new Error('rest-list-'+res.status); }
-    const json = await res.json();
-    (json.documents || []).forEach(doc=>{
-      const id = doc.name.split('/').pop();
-      documents.push({ id, ...fromFirestoreFields(doc.fields || {}) });
-    });
-    pageToken = json.nextPageToken || '';
+    const {signal, clear} = withAbortTimeout(REST_ATTEMPT_MS);
+    try{
+      const params = new URLSearchParams({pageSize:'300', key:firebaseConfig.apiKey});
+      if(pageToken) params.set('pageToken', pageToken);
+      const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}?${params}`;
+      const res = await fetch(url, {signal});
+      if(!res.ok){ const t = await res.text().catch(()=> ''); throw classifyRestError(res.status, t); }
+      const json = await res.json();
+      (json.documents || []).forEach(doc=>{
+        const id = doc.name.split('/').pop();
+        documents.push({ id, ...fromFirestoreFields(doc.fields || {}) });
+      });
+      pageToken = json.nextPageToken || '';
+    }finally{ clear(); }
   }while(pageToken);
   return documents;
 }
-/* Try the SDK first (fast path); if it fails or hangs, fall back to plain REST. */
+/* Try the SDK first (fast path, short budget); if it fails or hangs, switch
+   this session to REST for subsequent calls too. */
 async function readWithFallback(collection){
-  try{
-    const snap = await withTimeout(db.collection(collection).get(), 7000);
-    return snap.docs.map(d=>({id:d.id, ...d.data()}));
-  }catch(e1){
-    console.warn(`SDK read of ${collection} failed, trying REST fallback:`, e1);
-    return await withTimeout(firestoreRestList(collection), 10000);
+  if(!sdkTransportBlocked){
+    try{
+      const snap = await withTimeout(db.collection(collection).get(), SDK_ATTEMPT_MS);
+      return snap.docs.map(d=>({id:d.id, ...d.data()}));
+    }catch(e1){
+      console.warn(`SDK read of ${collection} failed, switching to REST for this session:`, e1);
+      sdkTransportBlocked = true;
+    }
   }
+  return await firestoreRestList(collection);
 }
 
 /* Wraps a promise so it never hangs forever — rejects after `ms` if unresolved (e.g. stuck network) */
@@ -2009,10 +2074,10 @@ async function init(){
 
 /* Lightweight single-document write/delete — used for individual add/edit/delete
    actions so we don't have to re-fetch and rewrite the whole collection every time. */
-async function saveHallSingle(id, data){ return writeWithFallback('hallSchedule', id, data); }
-async function deleteHallSingle(id){ return deleteWithFallback('hallSchedule', id); }
-async function saveCodeSingle(id, data){ return writeWithFallback('matchingCodes', id, data); }
-async function deleteCodeSingle(id){ return deleteWithFallback('matchingCodes', id); }
+async function saveHallSingle(id, data, onStatus){ return writeWithFallback('hallSchedule', id, data, onStatus); }
+async function deleteHallSingle(id, onStatus){ return deleteWithFallback('hallSchedule', id, onStatus); }
+async function saveCodeSingle(id, data, onStatus){ return writeWithFallback('matchingCodes', id, data, onStatus); }
+async function deleteCodeSingle(id, onStatus){ return deleteWithFallback('matchingCodes', id, onStatus); }
 
 function toast(msg, ms){
   const t = document.getElementById('toast');
@@ -2428,7 +2493,7 @@ async function requestDeleteHall(){
   if(!confirm('정말 이 일정을 삭제하시겠어요?')) return;
   const targetId = viewingHallId;
   let result;
-  try{ result = await withTimeout(deleteHallSingle(targetId), 20000); }
+  try{ result = await withTimeout(deleteHallSingle(targetId, s=>toast(s, 30000)), 12000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   halls = halls.filter(x=>x.id!==targetId);
@@ -2479,6 +2544,7 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
     halls[idx] = {...halls[idx], code, hall, datetime, memo};
   }else{
     const pw = document.getElementById('h_password').value;
+    if(submitBtn) submitBtn.textContent = '비밀번호 처리 중';
     const passwordFields = await createPasswordFields(pw);
     targetId = db.collection('hallSchedule').doc().id;
     newEntry = {id:targetId, code, hall, datetime, memo, ...passwordFields};
@@ -2487,7 +2553,7 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
 
   const { id: _omit, ...dataToSave } = halls.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveHallSingle(targetId, dataToSave), 20000); }
+  try{ result = await withTimeout(saveHallSingle(targetId, dataToSave, s=>{ if(submitBtn) submitBtn.textContent = s; }), 12000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2633,7 +2699,7 @@ async function requestDeleteCode(){
   if(!confirm('정말 이 짝꿍코드를 삭제하시겠어요?')) return;
   const targetId = viewingCodeId;
   let result;
-  try{ result = await withTimeout(deleteCodeSingle(targetId), 20000); }
+  try{ result = await withTimeout(deleteCodeSingle(targetId, s=>toast(s, 30000)), 12000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   codes = codes.filter(x=>x.id!==targetId);
@@ -2677,6 +2743,7 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
     codes[idx] = {...codes[idx], vendor, category, sharer, code};
   }else{
     const pw = document.getElementById('c_password').value;
+    if(submitBtn) submitBtn.textContent = '비밀번호 처리 중';
     const passwordFields = await createPasswordFields(pw);
     targetId = db.collection('matchingCodes').doc().id;
     newEntry = {id:targetId, vendor, category, sharer, code, ...passwordFields};
@@ -2685,7 +2752,7 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
 
   const { id: _omit, ...dataToSave } = codes.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveCodeSingle(targetId, dataToSave), 20000); }
+  try{ result = await withTimeout(saveCodeSingle(targetId, dataToSave, s=>{ if(submitBtn) submitBtn.textContent = s; }), 12000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2707,8 +2774,8 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
 });
 
 /* ============ WEDDING PREP CHECKLIST ============ */
-async function saveChecklistSingle(id, data){ return writeWithFallback('prepChecklist', id, data); }
-async function deleteChecklistSingle(id){ return deleteWithFallback('prepChecklist', id); }
+async function saveChecklistSingle(id, data, onStatus){ return writeWithFallback('prepChecklist', id, data, onStatus); }
+async function deleteChecklistSingle(id, onStatus){ return deleteWithFallback('prepChecklist', id, onStatus); }
 
 /* ---- build the input rows once (static template) ---- */
 function buildChecklistFormTable(){
@@ -2811,6 +2878,7 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
       if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
       return;
     }
+    if(submitBtn) submitBtn.textContent = '비밀번호 처리 중';
     const passwordFields = await createPasswordFields(pw);
     targetId = db.collection('prepChecklist').doc().id;
     newEntry = {id:targetId, ownerId, items, isPublic, ...passwordFields};
@@ -2819,7 +2887,7 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
 
   const { id: _omit, ...dataToSave } = checklists.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveChecklistSingle(targetId, dataToSave), 20000); }
+  try{ result = await withTimeout(saveChecklistSingle(targetId, dataToSave, s=>{ if(submitBtn) submitBtn.textContent = s; }), 12000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2940,7 +3008,7 @@ async function requestDeleteChecklist(){
   if(!confirm('정말 삭제하시겠어요?')) return;
   const targetId = viewingChecklistId;
   let result;
-  try{ result = await withTimeout(deleteChecklistSingle(targetId), 20000); }
+  try{ result = await withTimeout(deleteChecklistSingle(targetId, s=>toast(s, 30000)), 12000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   checklists = checklists.filter(x=>x.id!==targetId);
