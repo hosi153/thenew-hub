@@ -279,3 +279,22 @@ test('bugfix: the matching-code list table does not cause horizontal scroll on n
     assert.match(css, new RegExp(`table\\.code-list-table td:nth-child\\(${column}\\)\\{\\s*width:`));
   }
 });
+
+test('feature: checklist entries have a shareable deep-link URL', () => {
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  // #more/checklist and #more/checklist/<id> must both be recognized by the
+  // deep-link router, and a pending entry id must be opened only after
+  // checklist data has actually loaded (not synchronously at parse time).
+  assert.match(main, /'hallinfo','terms','bouquet','parking','checklist'/);
+  assert.match(main, /let pendingChecklistDeepLinkId = null;/);
+  assert.match(main, /pendingChecklistDeepLinkId = decodeURIComponent\(subId\);/);
+  const initBody = main.slice(main.indexOf('async function init()'), main.indexOf('\n\n\nimport'));
+  assert.match(initBody, /if\(pendingChecklistDeepLinkId\)\{[\s\S]*?openChecklistDetail\(targetId\);/);
+
+  const checklistView = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
+  assert.match(checklistView, /export async function copyChecklistLink\(\)/);
+  assert.match(checklistView, /#more\/checklist\/\$\{encodeURIComponent\(item\.id\)\}/);
+
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /onclick="copyChecklistLink\(\)"/);
+});

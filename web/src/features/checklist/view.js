@@ -260,10 +260,7 @@ function checklistText(item){
   return lines.join('\n');
 }
 
-export async function copyChecklist(){
-  const item = checklistState.items.find(x=>x.id===checklistState.viewingId);
-  if(!item) return;
-  const text = checklistText(item);
+async function copyText(text){
   try{
     await navigator.clipboard.writeText(text);
   }catch(e){
@@ -273,7 +270,28 @@ export async function copyChecklist(){
     try{ document.execCommand('copy'); }catch(e2){}
     document.body.removeChild(ta);
   }
+}
+
+export async function copyChecklist(){
+  const item = checklistState.items.find(x=>x.id===checklistState.viewingId);
+  if(!item) return;
+  await copyText(checklistText(item));
   toast('복사되었습니다');
+}
+
+/* Deep link straight to this one entry: #more/checklist/<id>. main.js's
+   routing IIFE opens the checklist list and, once data has loaded, this
+   exact entry's detail view. Private entries still require the password
+   (openChecklistDetail() calls verify() the same as tapping the row does),
+   so sharing the link doesn't bypass anything. */
+export async function copyChecklistLink(){
+  const item = checklistState.items.find(x=>x.id===checklistState.viewingId);
+  if(!item) return;
+  const url = `${location.origin}${location.pathname}#more/checklist/${encodeURIComponent(item.id)}`;
+  await copyText(url);
+  toast(item.isPublic
+    ? '링크가 복사되었어요. 이 링크를 받은 사람은 누구나 바로 볼 수 있어요.'
+    : '링크가 복사되었어요. 비공개 항목이라 여는 사람은 비밀번호를 입력해야 해요.', 4000);
 }
 
 export async function requestEditChecklist(){

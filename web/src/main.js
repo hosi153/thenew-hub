@@ -354,6 +354,11 @@ async function init(){
     renderChecklistList();
     if(document.getElementById('page-halls').classList.contains('active') && scheduleState.view==='calendar') renderCalendar();
     if(isUsingSeedFallback) toast('실시간 데이터 연결에 실패해 기본 데이터를 표시하고 있어요.', 6000);
+    if(pendingChecklistDeepLinkId){
+      const targetId = pendingChecklistDeepLinkId;
+      pendingChecklistDeepLinkId = null;
+      openChecklistDetail(targetId);
+    }
   }catch(e){
     console.error('render failed:', e);
     const retryHtml = `<div class="empty">불러오는 중 문제가 생겼어요.<br><button type="button" class="btn btn-outline" style="margin-top:10px;" onclick="location.reload()">다시 시도</button></div>`;
@@ -397,16 +402,22 @@ document.getElementById('fab').style.display='none';
    Opening the shared link with a #hash jumps straight to that tab, and
    optionally a sub-target after a slash:
    #home  #halls  #codes  #partners  #more
-   #more/hallinfo  #more/terms  #more/bouquet  #more/parking             */
+   #more/hallinfo  #more/terms  #more/bouquet  #more/parking
+   #more/checklist              — jumps straight to the checklist list
+   #more/checklist/<entryId>    — also opens that one entry's detail view
+                                   (once its data has loaded; prompts for a
+                                   password first if the entry is private) */
+let pendingChecklistDeepLinkId = null;
 (function(){
   const valid = ['home','halls','codes','partners','more'];
   const raw = (location.hash || '').replace('#','');
-  const [page, sub] = raw.split('/');
+  const [page, sub, subId] = raw.split('/');
   if(!valid.includes(page)) return;
   go(page);
   if(!sub) return;
-  if(page==='more' && ['hallinfo','terms','bouquet','parking'].includes(sub)){
+  if(page==='more' && ['hallinfo','terms','bouquet','parking','checklist'].includes(sub)){
     setTimeout(()=>openSub(sub), 0);
+    if(sub==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
   }
 })();
 
@@ -442,6 +453,7 @@ import {
   closeChecklistDetail,
   closeChecklistFormModal,
   copyChecklist,
+  copyChecklistLink,
   initializeChecklists,
   loadMyChecklist,
   openChecklistDetail,
@@ -579,6 +591,7 @@ window.closeHallModal = closeHallModal;
 window.closePartner = closePartner;
 window.closeSub = closeSub;
 window.copyChecklist = copyChecklist;
+window.copyChecklistLink = copyChecklistLink;
 window.go = go;
 window.handleCodeSearchInput = handleCodeSearchInput;
 window.handleHallSearchInput = handleHallSearchInput;
