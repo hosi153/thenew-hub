@@ -249,3 +249,13 @@ test('bugfix: the floating "+" button does not cover list content on the pages i
   // scrolled list doesn't end up hidden behind it.
   assert.match(css, /#page-halls,\s*#page-codes\{\s*padding-bottom:90px;\s*\}/);
 });
+
+test('bugfix: the checklist form no longer has a nested inner scroll fighting the outer modal scroll', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const formWrapper = webHtml.slice(
+    webHtml.indexOf('id="ck_public"'),
+    webHtml.indexOf('id="checklistFormTable"'),
+  );
+  assert.doesNotMatch(formWrapper, /max-height/);
+  assert.doesNotMatch(formWrapper, /overflow-y:auto/);
+});

@@ -463,3 +463,15 @@ Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변�
 **검증**: `npm run build` 성공, `tests/vite-build.test.mjs`에 회귀 테스트 1개 추가, **전체 32개 테스트 통과**.
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — 버그 수정: 체크리스트 입력 폼 이중 스크롤
+
+**사용자 리포트**: "체크리스트 입력 폼에서 스크롤이 이중으로 되어있는데 내부 스크롤 제거하고 전체 다 펼쳐서 스크롤 하나로"
+
+**원인**: 체크리스트 등록/수정 모달(`#checklistFormOverlay`)은 이미 `.modal` 자체에 `max-height:min(85vh,720px); overflow-y:auto;`(바깥쪽 스크롤)가 있는데, 그 안의 `#checklistFormTable`을 감싼 div에도 별도로 `max-height:42vh; overflow-y:auto;`(안쪽 스크롤)가 걸려 있어서 스크롤이 중첩되어 있었음. (체크리스트 상세보기 모달의 `max-height:46vh` 스크롤은 이번 요청 대상이 아니라 그대로 둠)
+
+**수정**: `web/index.html`의 해당 wrapper div에서 `max-height`/`overflow-y:auto`/`padding-right`를 제거 — 입력 항목 전체가 자연스럽게 펼쳐지고, 모달 전체의 바깥쪽 스크롤 하나로만 움직이도록 변경.
+
+**검증**: `npm run build` 성공, `tests/vite-build.test.mjs`에 회귀 테스트 1개 추가(작업 중 테스트 이름 문자열의 이스케이프 문법 오류로 한 번 실패 → 즉시 수정), **전체 33개 테스트 통과**.
+
+**커밋**: (아래 실제 커밋 해시로 갱신)
