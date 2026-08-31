@@ -48,6 +48,11 @@
   }
 
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible,
+  textarea:focus-visible, [role="button"]:focus-visible{
+    outline:3px solid rgba(var(--accent-rgb),0.38); outline-offset:2px;
+  }
+  [role="button"]{ cursor:pointer; }
   html,body{margin:0; padding:0;}
   html{ color-scheme:light; }
   html[data-theme="dark"]{ color-scheme:dark; }
@@ -107,6 +112,9 @@
   .page{ display:none; animation:fade .18s ease; }
   .page.active{ display:block; }
   @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+  @media (prefers-reduced-motion:reduce){
+    *, *::before, *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+  }
 
   /* ---------- Typographic hierarchy ---------- */
   .kicker{
@@ -465,7 +473,7 @@
   <p>더뉴컨벤션에서 결혼하시는 분들을 위한 정보 공유 공간</p>
 </header>
 
-<div class="status-toast" id="toast"></div>
+<div class="status-toast" id="toast" role="status" aria-live="polite"></div>
 
 <main>
 
@@ -521,12 +529,12 @@
     <p class="section-sub">홀별 예식 일정을 확인하고, 본인 일정을 직접 등록해주세요.</p>
 
     <div class="view-toggle">
-      <button class="chip active" id="viewToggleList" onclick="setHallView('list')">목록</button>
-      <button class="chip" id="viewToggleCal" onclick="setHallView('calendar')">달력</button>
+      <button class="chip active" id="viewToggleList" aria-pressed="true" onclick="setHallView('list')">목록</button>
+      <button class="chip" id="viewToggleCal" aria-pressed="false" onclick="setHallView('calendar')">달력</button>
     </div>
 
     <div id="hallListView">
-      <input class="search" id="hallSearch" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="renderHalls()">
+      <input class="search" id="hallSearch" aria-label="일정 코드 검색" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="renderHalls()">
       <div class="chiprow" id="hallChips"></div>
       <label class="past-toggle">
         <input type="checkbox" id="showPastToggle" onchange="setShowPast(this.checked)">
@@ -537,9 +545,9 @@
 
     <div id="hallCalendarView" style="display:none;">
       <div class="cal-nav">
-        <button onclick="calShiftMonth(-1)">‹</button>
+        <button aria-label="이전 달" onclick="calShiftMonth(-1)">‹</button>
         <div class="cal-title" id="calTitle"></div>
-        <button onclick="calShiftMonth(1)">›</button>
+        <button aria-label="다음 달" onclick="calShiftMonth(1)">›</button>
       </div>
       <div class="cal-grid" id="calGrid"></div>
       <div class="cal-legend">
@@ -556,7 +564,7 @@
     <div class="kicker">REFERRAL CODE</div><div class="section-title">짝꿍코드</div>
     <p class="section-sub">먼저 계약한 분들의 짝꿍코드를 확인하고, 본인 것도 등록해주세요.</p>
 
-    <input class="search" id="codeSearch" placeholder="업체명 / 닉네임으로 검색..." autocomplete="off" oninput="renderCodes()">
+    <input class="search" id="codeSearch" aria-label="짝꿍코드 검색" placeholder="업체명 / 닉네임으로 검색..." autocomplete="off" oninput="renderCodes()">
     <div class="chiprow" id="codeChips"></div>
 
     <div id="codeList"><div class="loading">불러오는 중...</div></div>
@@ -572,17 +580,17 @@
         <table class="list-table">
           <thead><tr><th>업체명</th><th>카테고리</th></tr></thead>
           <tbody>
-            <tr class="rowitem" onclick="openPartner('botti')"><td><b>보띠데일리</b></td><td><span class="hall-badge">스드메·본식</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('veilblanc')"><td><b>베일드블랑 X 디어마이</b></td><td><span class="hall-badge">스드메</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('onto')"><td><b>온투필름</b></td><td><span class="hall-badge">스냅</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('daege')"><td><b>대게 사진관</b></td><td><span class="hall-badge">서브스냅</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('muze')"><td><b>무제 스냅&DVD</b></td><td><span class="hall-badge">본식DVD</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('daegeretouch')"><td><b>대게 보정공장</b></td><td><span class="hall-badge">사설보정</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('jungwoori')"><td><b>정우리웨딩보정</b></td><td><span class="hall-badge">사설보정</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('hanbok')"><td><b>느와한복</b></td><td><span class="hall-badge">한복</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('marketb')"><td><b>마켓비</b></td><td><span class="hall-badge">가구</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('mc')"><td><b>조유진mc</b></td><td><span class="hall-badge">사회</span></td></tr>
-            <tr class="rowitem" onclick="openPartner('invite')"><td><b>메리지포켓</b></td><td><span class="hall-badge">청첩장</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="botti"><td><b>보띠데일리</b></td><td><span class="hall-badge">스드메·본식</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="veilblanc"><td><b>베일드블랑 X 디어마이</b></td><td><span class="hall-badge">스드메</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="onto"><td><b>온투필름</b></td><td><span class="hall-badge">스냅</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="daege"><td><b>대게 사진관</b></td><td><span class="hall-badge">서브스냅</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="muze"><td><b>무제 스냅&DVD</b></td><td><span class="hall-badge">본식DVD</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="daegeretouch"><td><b>대게 보정공장</b></td><td><span class="hall-badge">사설보정</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="jungwoori"><td><b>정우리웨딩보정</b></td><td><span class="hall-badge">사설보정</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="hanbok"><td><b>느와한복</b></td><td><span class="hall-badge">한복</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="marketb"><td><b>마켓비</b></td><td><span class="hall-badge">가구</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="mc"><td><b>조유진mc</b></td><td><span class="hall-badge">사회</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="invite"><td><b>메리지포켓</b></td><td><span class="hall-badge">청첩장</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -792,7 +800,7 @@
         <p class="muted">추가할인: 지인소개·얼리버드·블로그후기 각 1만원, 본식후기 페이백 3만원</p>
         <p class="muted">부가서비스: 맞춤형 사회 대본, 축가 대행 3만원, 혼인서약서·성혼선언문 작성 2만원</p>
         <div class="actions">
-          <a class="btn btn-outline btn-sm" href="http://pf.kakao.com/_xlRSPX" target="_blank">카카오 채널 문의</a>
+          <a class="btn btn-outline btn-sm" href="https://pf.kakao.com/_xlRSPX" target="_blank">카카오 채널 문의</a>
           <a class="btn btn-ghost btn-sm" href="https://www.instagram.com/yoojin_winter/" target="_blank">인스타그램</a>
         </div>
       </div>
@@ -811,7 +819,7 @@
         <p class="muted">100% 피팅 예약제 (피팅비 인당 3만원, 최대 3벌) · 전날 대여 가능, 익일 반납 가능</p>
         <p class="muted">주소: 서울 강서구 마곡중앙4로 22 A동 3층 308호</p>
         <div class="actions">
-          <a class="btn btn-outline btn-sm" href="http://pf.kakao.com/_xlRSPX" target="_blank">상담 문의</a>
+          <a class="btn btn-outline btn-sm" href="https://pf.kakao.com/_xlRSPX" target="_blank">상담 문의</a>
           <a class="btn btn-ghost btn-sm" href="https://litt.ly/nwahanbok" target="_blank">홈페이지</a>
         </div>
       </div>
@@ -908,11 +916,11 @@
     <div id="more-menu">
       <div class="kicker">RESOURCES</div><div class="section-title">정보 모음</div>
       <div class="info-list">
-        <div class="info-link" onclick="openSub('hallinfo')"><span class="l"><span class="dot"></span>홀 기본정보</span><span class="arrow">›</span></div>
-        <div class="info-link" onclick="openSub('terms')"><span class="l"><span class="dot"></span>용어 설명</span><span class="arrow">›</span></div>
-        <div class="info-link" onclick="openSub('bouquet')"><span class="l"><span class="dot"></span>부케 안내</span><span class="arrow">›</span></div>
-        <div class="info-link" onclick="openSub('parking')"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
-        <div class="info-link" onclick="openSub('checklist')"><span class="l"><span class="dot"></span>예식 준비 체크리스트</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="hallinfo"><span class="l"><span class="dot"></span>홀 기본정보</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="terms"><span class="l"><span class="dot"></span>용어 설명</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="bouquet"><span class="l"><span class="dot"></span>부케 안내</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="parking"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="checklist"><span class="l"><span class="dot"></span>예식 준비 체크리스트</span><span class="arrow">›</span></div>
         <a class="info-link" href="https://docs.google.com/spreadsheets/d/1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/edit?usp=sharing" target="_blank"><span class="l"><span class="dot"></span>예식 양식 모음</span><span class="arrow">↗</span></a>
         <a class="info-link" href="https://drive.google.com/drive/folders/1sFr7egHVGCvKwgTpKY7B2ZO310Ecx5-D?usp=drive_link" target="_blank"><span class="l"><span class="dot"></span>예식 음원 모음</span><span class="arrow">↗</span></a>
       </div>
@@ -1004,9 +1012,9 @@
 </main>
 
 <!-- ---------------- Hall Detail (read-only) ---------------- -->
-<div class="overlay" id="hallDetailOverlay">
-  <div class="modal">
-    <h2>일정 상세</h2>
+<div class="overlay" id="hallDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hallDetailTitle">
+    <h2 id="hallDetailTitle">일정 상세</h2>
     <div class="field"><label>코드(닉네임)</label><p id="hd_code" style="font-size:15px; font-weight:600;"></p></div>
     <div class="field"><label>홀</label><p id="hd_hall" style="font-size:15px;"></p></div>
     <div class="field"><label>예식 날짜 · 시간</label><p id="hd_datetime" style="font-size:15px;"></p></div>
@@ -1020,16 +1028,16 @@
 </div>
 
 <!-- ---------------- Add/Edit Hall Modal ---------------- -->
-<div class="overlay" id="hallOverlay">
-  <div class="modal">
+<div class="overlay" id="hallOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hallModalTitle">
     <h2 id="hallModalTitle">일정 등록</h2>
     <form id="hallForm">
       <div class="field">
-        <label>코드(닉네임) <span class="req">*</span></label>
-        <input type="text" id="h_code" placeholder="예: 2610도화" required>
+        <label for="h_code">코드(닉네임) <span class="req">*</span></label>
+        <input type="text" id="h_code" maxlength="40" placeholder="예: 2610도화" required>
       </div>
       <div class="field">
-        <label>홀 <span class="req">*</span></label>
+        <label for="h_hall">홀 <span class="req">*</span></label>
         <select id="h_hall" required>
           <option value="" disabled selected>선택해주세요</option>
           <option value="제니스홀">제니스홀</option>
@@ -1038,16 +1046,16 @@
         </select>
       </div>
       <div class="field">
-        <label>예식 날짜 · 시간 <span class="req">*</span></label>
+        <label for="h_datetime">예식 날짜 · 시간 <span class="req">*</span></label>
         <input type="datetime-local" id="h_datetime" required>
       </div>
       <div class="field">
-        <label>메모</label>
-        <textarea id="h_memo" rows="2" placeholder="선택 입력"></textarea>
+        <label for="h_memo">메모</label>
+        <textarea id="h_memo" rows="2" maxlength="300" placeholder="선택 입력"></textarea>
       </div>
       <div class="field" id="h_pw_field">
-        <label>비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
-        <input type="password" id="h_password" placeholder="숫자/영문 아무거나" required>
+        <label for="h_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="h_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
       </div>
       <div class="actions">
         <button type="button" class="btn btn-outline" onclick="closeHallModal()">취소</button>
@@ -1058,9 +1066,9 @@
 </div>
 
 <!-- ---------------- Code Detail (read-only) ---------------- -->
-<div class="overlay" id="codeDetailOverlay">
-  <div class="modal">
-    <h2>짝꿍코드 상세</h2>
+<div class="overlay" id="codeDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeDetailTitle">
+    <h2 id="codeDetailTitle">짝꿍코드 상세</h2>
     <div class="field"><label>업체명</label><p id="cd_vendor" style="font-size:15px; font-weight:600;"></p></div>
     <div class="field"><label>카테고리</label><p id="cd_category" style="font-size:15px;"></p></div>
     <div class="field"><label>공유자 (오픈카톡아이디)</label><p id="cd_sharer" style="font-size:15px;"></p></div>
@@ -1074,16 +1082,16 @@
 </div>
 
 <!-- ---------------- Add/Edit Code Modal ---------------- -->
-<div class="overlay" id="codeOverlay">
-  <div class="modal">
+<div class="overlay" id="codeOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeModalTitle">
     <h2 id="codeModalTitle">짝꿍코드 등록</h2>
     <form id="codeForm">
       <div class="field">
-        <label>업체명 <span class="req">*</span></label>
-        <input type="text" id="c_vendor" placeholder="예: 르랑필름" required>
+        <label for="c_vendor">업체명 <span class="req">*</span></label>
+        <input type="text" id="c_vendor" maxlength="100" placeholder="예: 르랑필름" required>
       </div>
       <div class="field">
-        <label>카테고리 <span class="req">*</span></label>
+        <label for="c_category">카테고리 <span class="req">*</span></label>
         <select id="c_category" required>
           <option value="" disabled selected>선택해주세요</option>
           <option value="스냅">스냅</option>
@@ -1095,16 +1103,16 @@
         </select>
       </div>
       <div class="field">
-        <label>공유자 (오픈카톡아이디) <span class="req">*</span></label>
-        <input type="text" id="c_sharer" placeholder="예: 2610도화" required>
+        <label for="c_sharer">공유자 (오픈카톡아이디) <span class="req">*</span></label>
+        <input type="text" id="c_sharer" maxlength="80" placeholder="예: 2610도화" required>
       </div>
       <div class="field">
-        <label>짝꿍코드 <span class="req">*</span></label>
-        <input type="text" id="c_code" placeholder="예: 261017도화" required>
+        <label for="c_code">짝꿍코드 <span class="req">*</span></label>
+        <input type="text" id="c_code" maxlength="120" placeholder="예: 261017도화" required>
       </div>
       <div class="field" id="c_pw_field">
-        <label>비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
-        <input type="password" id="c_password" placeholder="숫자/영문 아무거나" required>
+        <label for="c_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="c_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
       </div>
       <div class="actions">
         <button type="button" class="btn btn-outline" onclick="closeCodeModal()">취소</button>
@@ -1115,12 +1123,13 @@
 </div>
 
 <!-- ---------------- Password prompt (generic) ---------------- -->
-<div class="overlay" id="pwOverlay">
-  <div class="modal">
+<div class="overlay" id="pwOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
     <h2 id="pwTitle">비밀번호 확인</h2>
     <p style="font-size:13px; color:var(--ink-soft); margin:-8px 0 16px;">등록하실 때 입력했던 비밀번호를 넣어주세요.</p>
     <div class="field">
-      <input type="password" id="pwInput" placeholder="비밀번호">
+      <label for="pwInput">비밀번호</label>
+      <input type="password" id="pwInput" maxlength="128" placeholder="비밀번호">
     </div>
     <p id="pwError" style="color:var(--error); font-size:12.5px; display:none;">비밀번호가 맞지 않아요. 다시 확인해주세요.</p>
     <div class="actions">
@@ -1131,9 +1140,9 @@
 </div>
 
 <!-- ---------------- Checklist Detail (read-only, table) ---------------- -->
-<div class="overlay" id="checklistDetailOverlay">
-  <div class="modal">
-    <h2>체크리스트 상세</h2>
+<div class="overlay" id="checklistDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checklistDetailTitle">
+    <h2 id="checklistDetailTitle">체크리스트 상세</h2>
     <div style="display:flex; align-items:center; gap:8px; margin:-6px 0 14px;">
       <b id="ckd_owner" style="font-size:15px;"></b>
       <span id="ckd_badge"></span>
@@ -1151,14 +1160,14 @@
 </div>
 
 <!-- ---------------- Checklist Add/Edit Modal ---------------- -->
-<div class="overlay" id="checklistFormOverlay">
-  <div class="modal">
+<div class="overlay" id="checklistFormOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checklistFormTitle">
     <h2 id="checklistFormTitle">체크리스트 작성</h2>
     <form id="checklistForm">
       <div class="field">
-        <label>아이디(코드/닉네임) <span class="req">*</span></label>
+        <label for="ck_ownerId">아이디(코드/닉네임) <span class="req">*</span></label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="ck_ownerId" placeholder="예: 2610도화" required style="flex:1;">
+          <input type="text" id="ck_ownerId" maxlength="40" placeholder="예: 2610도화" required style="flex:1;">
           <button type="button" class="btn btn-outline" onclick="loadMyChecklist()" style="flex:0 0 auto; padding:0 16px;">불러오기</button>
         </div>
         <p class="muted" style="margin:6px 0 0; font-size:11.5px;">이미 작성한 아이디면 불러오기로 수정, 처음이면 그대로 새로 작성하세요.</p>
@@ -1174,8 +1183,8 @@
       </div>
 
       <div class="field" id="ck_pw_field">
-        <label>비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
-        <input type="password" id="ck_password" placeholder="숫자/영문 아무거나" required>
+        <label for="ck_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="ck_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
       </div>
       <div class="actions">
         <button type="button" class="btn btn-outline" onclick="closeChecklistFormModal()">취소</button>
@@ -1186,10 +1195,10 @@
 </div>
 
 
-<button class="fab" id="fab" onclick="openAddModal()">+</button>
+<button class="fab" id="fab" aria-label="현재 목록에 항목 추가" onclick="openAddModal()">+</button>
 
 <nav class="bottom">
-  <button class="nav-btn active" data-page="home" onclick="go('home')">
+  <button class="nav-btn active" data-page="home" aria-current="page" onclick="go('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
     <span class="lb">홈</span>
   </button>
@@ -1246,6 +1255,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+document.querySelectorAll('a[target="_blank"]').forEach(link=>{ link.rel = 'noopener noreferrer'; });
 // Some ad blockers, VPNs, and Private Relay silently drop Firestore's default
 // streaming connection (causing requests to hang forever instead of failing fast).
 // Auto-detecting and falling back to long-polling works around this reliably.
@@ -1445,13 +1455,16 @@ const SEED_CODES = [
 let halls = [];
 let codes = [];
 let checklists = [];
+let isUsingSeedFallback = false;
 
 /* ---------- Pagination state (infinite scroll for halls/codes) ---------- */
 const PAGE_SIZE = 20;
-let hallPage = { lastDoc:null, hasMore:true, loading:false };
+let hallPage = { lastDoc:null, hasMore:true, loading:false, error:null };
 let hallFullyLoaded = false;
-let codePage = { lastDoc:null, hasMore:true, loading:false };
+let hallFullLoading = false;
+let codePage = { lastDoc:null, hasMore:true, loading:false, error:null };
 let codeFullyLoaded = false;
+let codeFullLoading = false;
 let calMonthCache = {}; // 'YYYY-M' -> hall items for that calendar month
 let viewingChecklistId = null;
 let editingChecklistId = null;
@@ -1611,14 +1624,22 @@ function fromFirestoreFields(fields){
   return obj;
 }
 async function firestoreRestList(collection){
-  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}?pageSize=300&key=${firebaseConfig.apiKey}`;
-  const res = await fetch(url);
-  if(!res.ok){ throw new Error('rest-list-'+res.status); }
-  const json = await res.json();
-  return (json.documents || []).map(doc=>{
-    const id = doc.name.split('/').pop();
-    return { id, ...fromFirestoreFields(doc.fields || {}) };
-  });
+  const documents = [];
+  let pageToken = '';
+  do{
+    const params = new URLSearchParams({pageSize:'300', key:firebaseConfig.apiKey});
+    if(pageToken) params.set('pageToken', pageToken);
+    const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}?${params}`;
+    const res = await fetch(url);
+    if(!res.ok){ throw new Error('rest-list-'+res.status); }
+    const json = await res.json();
+    (json.documents || []).forEach(doc=>{
+      const id = doc.name.split('/').pop();
+      documents.push({ id, ...fromFirestoreFields(doc.fields || {}) });
+    });
+    pageToken = json.nextPageToken || '';
+  }while(pageToken);
+  return documents;
 }
 /* Try the SDK first (fast path); if it fails or hangs, fall back to plain REST. */
 async function readWithFallback(collection){
@@ -1639,31 +1660,78 @@ function withTimeout(promise, ms=15000){
   ]);
 }
 
-async function hashPw(pw){
+function bytesToHex(bytes){
+  return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function hashPwLegacy(pw){
   const enc = new TextEncoder().encode(pw);
   const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return bytesToHex(new Uint8Array(buf));
+}
+const PW_ITERATIONS = 210000;
+async function derivePwHash(pw, saltHex, iterations=PW_ITERATIONS){
+  const salt = new Uint8Array((saltHex.match(/.{2}/g) || []).map(v=>parseInt(v,16)));
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations}, key, 256);
+  return bytesToHex(new Uint8Array(bits));
+}
+async function createPasswordFields(pw){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const pwSalt = bytesToHex(saltBytes);
+  return { pwHash:await derivePwHash(pw, pwSalt), pwSalt, pwIterations:PW_ITERATIONS, pwVersion:2 };
+}
+async function matchesItemPassword(item, pw){
+  if(item && item.pwVersion===2 && item.pwSalt){
+    return await derivePwHash(pw, item.pwSalt, item.pwIterations || PW_ITERATIONS) === item.pwHash;
+  }
+  return await hashPwLegacy(pw) === (item && item.pwHash);
+}
+async function authenticateItem(item, pw){
+  if(await hashPwLegacy(pw) === ADMIN_PW_HASH) return true;
+  return await matchesItemPassword(item, pw);
 }
 
 /* ============ GENERIC PASSWORD PROMPT (Promise-based) ============ */
+function showOverlay(id){
+  const overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay._returnFocus = document.activeElement;
+  overlay.setAttribute('aria-hidden','false');
+  overlay.classList.add('show');
+  requestAnimationFrame(()=>{
+    const focusTarget = overlay.querySelector('input:not([type="hidden"]), select, textarea, button');
+    if(focusTarget) focusTarget.focus();
+  });
+}
+function hideOverlay(id){
+  const overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.remove('show');
+  overlay.setAttribute('aria-hidden','true');
+  const returnFocus = overlay._returnFocus;
+  if(returnFocus && returnFocus.isConnected) returnFocus.focus();
+  overlay._returnFocus = null;
+}
 let pwResolver = null;
 function askPassword(title){
   document.getElementById('pwTitle').textContent = title || '비밀번호 확인';
   document.getElementById('pwInput').value = '';
   document.getElementById('pwError').style.display = 'none';
-  document.getElementById('pwOverlay').classList.add('show');
-  setTimeout(()=>document.getElementById('pwInput').focus(), 100);
+  showOverlay('pwOverlay');
   return new Promise(resolve=>{ pwResolver = resolve; });
 }
 function cancelPwPrompt(){
-  document.getElementById('pwOverlay').classList.remove('show');
+  hideOverlay('pwOverlay');
   if(pwResolver){ pwResolver(null); pwResolver = null; }
 }
 function submitPwPrompt(){
   const val = document.getElementById('pwInput').value;
-  document.getElementById('pwOverlay').classList.remove('show');
+  hideOverlay('pwOverlay');
   if(pwResolver){ pwResolver(val); pwResolver = null; }
 }
+document.getElementById('pwInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); submitPwPrompt(); }
+});
 
 /* Master admin password (fallback for entries with no password of their own,
    and for overriding any entry's own password). SHA-256 hash only stored here. */
@@ -1673,15 +1741,13 @@ const ADMIN_PW_HASH = 'c6153ba58146cdde8fccdf3f53a0cb964795a906430a7ba428eccd6da
 async function verify(item){
   const pw = await askPassword('비밀번호 확인');
   if(pw===null) return false;
-  const h = await hashPw(pw);
-  if(h === item.pwHash || h === ADMIN_PW_HASH){ return true; }
-  document.getElementById('pwOverlay').classList.add('show');
+  if(await authenticateItem(item, pw)){ return true; }
+  showOverlay('pwOverlay');
   document.getElementById('pwError').style.display='block';
   const retry = await new Promise(resolve=>{ pwResolver = resolve; });
-  document.getElementById('pwOverlay').classList.remove('show');
+  hideOverlay('pwOverlay');
   if(retry===null) return false;
-  const h2 = await hashPw(retry);
-  return h2 === item.pwHash || h2 === ADMIN_PW_HASH;
+  return await authenticateItem(item, retry);
 }
 
 /* ============ CHAT-MANAGED PATCHES ============
@@ -1699,6 +1765,7 @@ const ADMIN_PATCHES = [
 
 async function applyPatches(){
   let applied = [];
+  const newlyApplied = [];
   try{
     const rec = await db.collection('meta').doc('appliedPatches').get();
     applied = rec.exists ? (rec.data().ids || []) : [];
@@ -1711,26 +1778,37 @@ async function applyPatches(){
     const list = p.target==='hall' ? halls : codes;
     const collection = p.target==='hall' ? 'hallSchedule' : 'matchingCodes';
     try{
+      let result;
       if(p.type==='delete'){
-        await deleteWithFallback(collection, p.matchId);
+        result = await deleteWithFallback(collection, p.matchId);
+        if(!result.ok) throw new Error(result.error || 'patch-delete-failed');
         const idx = list.findIndex(x=>x.id===p.matchId);
         if(idx>-1) list.splice(idx,1);
       }else if(p.type==='edit'){
         // Partial merge — works correctly even if this document isn't part of
         // the currently-loaded page (pagination may not have fetched it yet).
-        await mergeWithFallback(collection, p.matchId, p.changes);
+        result = await mergeWithFallback(collection, p.matchId, p.changes);
+        if(!result.ok) throw new Error(result.error || 'patch-edit-failed');
         const idx = list.findIndex(x=>x.id===p.matchId);
         if(idx>-1) Object.assign(list[idx], p.changes);
       }else if(p.type==='add'){
         const newId = (p.target==='hall'?'h_':'c_')+'patch_'+p.id;
-        await writeWithFallback(collection, newId, p.item);
+        result = await writeWithFallback(collection, newId, p.item);
+        if(!result.ok) throw new Error(result.error || 'patch-add-failed');
         if(!list.some(x=>x.id===newId)) list.push({ id:newId, ...p.item });
       }
+      applied.push(p.id);
+      newlyApplied.push(p.id);
     }catch(e){ console.error('patch apply failed for', p.id, e); }
-    applied.push(p.id);
   }
   calMonthCache = {};
-  try{ await db.collection('meta').doc('appliedPatches').set({ids: applied}); }catch(e){}
+  if(newlyApplied.length){
+    try{
+      await db.collection('meta').doc('appliedPatches').set({
+        ids: firebase.firestore.FieldValue.arrayUnion(...newlyApplied)
+      }, {merge:true});
+    }catch(e){ console.error('patch status write failed:', e); }
+  }
 }
 
 /* ============ INIT ============ */
@@ -1749,15 +1827,18 @@ async function init(){
         if(existsSnap.empty){
           const batch = db.batch();
           SEED_HALLS.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
-          try{ await withTimeout(batch.commit(), 10000); }catch(e){}
+          try{ await withTimeout(batch.commit(), 10000); }
+          catch(e){ isUsingSeedFallback = true; console.error('hall seed write failed:', e); }
           halls = SEED_HALLS.slice();
-          hallFullyLoaded = true; hallPage.hasMore = false;
+          hallFullyLoaded = true; hallPage.hasMore = false; hallPage.error = null;
         }else{
-          await Promise.all([ loadMoreHalls(), loadUndatedHalls() ]);
+          const [pageOk] = await Promise.all([ loadMoreHalls(), loadUndatedHalls() ]);
+          if(!pageOk) throw new Error('hall-first-page-failed');
         }
       }catch(e){
         console.error('hall init failed, using seed data as fallback:', e);
-        halls = SEED_HALLS.slice(); hallFullyLoaded = true; hallPage.hasMore = false;
+        isUsingSeedFallback = true;
+        halls = SEED_HALLS.slice(); hallFullyLoaded = true; hallPage.hasMore = false; hallPage.error = null;
       }
     })(),
     // ---- Codes: seed if empty, otherwise load page 1 ----
@@ -1767,15 +1848,18 @@ async function init(){
         if(existsSnap.empty){
           const batch = db.batch();
           SEED_CODES.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
-          try{ await withTimeout(batch.commit(), 10000); }catch(e){}
+          try{ await withTimeout(batch.commit(), 10000); }
+          catch(e){ isUsingSeedFallback = true; console.error('code seed write failed:', e); }
           codes = SEED_CODES.slice();
-          codeFullyLoaded = true; codePage.hasMore = false;
+          codeFullyLoaded = true; codePage.hasMore = false; codePage.error = null;
         }else{
-          await loadMoreCodes();
+          const pageOk = await loadMoreCodes();
+          if(!pageOk) throw new Error('code-first-page-failed');
         }
       }catch(e){
         console.error('code init failed, using seed data as fallback:', e);
-        codes = SEED_CODES.slice(); codeFullyLoaded = true; codePage.hasMore = false;
+        isUsingSeedFallback = true;
+        codes = SEED_CODES.slice(); codeFullyLoaded = true; codePage.hasMore = false; codePage.error = null;
       }
     })(),
     // ---- Checklist: small collection, simple one-time load (no pagination needed) ----
@@ -1794,6 +1878,7 @@ async function init(){
     renderHalls();
     renderCodes();
     renderChecklistList();
+    if(isUsingSeedFallback) toast('실시간 데이터 연결에 실패해 기본 데이터를 표시하고 있어요.', 6000);
   }catch(e){
     console.error('render failed:', e);
     const retryHtml = `<div class="empty">불러오는 중 문제가 생겼어요.<br><button type="button" class="btn btn-outline" style="margin-top:10px;" onclick="location.reload()">다시 시도</button></div>`;
@@ -1823,9 +1908,12 @@ function toast(msg, ms){
 function go(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
-  document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('nav.bottom button').forEach(b=>{
+    b.classList.remove('active');
+    b.removeAttribute('aria-current');
+  });
   const navBtn = document.querySelector(`nav.bottom button[data-page="${page}"]`);
-  if(navBtn) navBtn.classList.add('active');
+  if(navBtn){ navBtn.classList.add('active'); navBtn.setAttribute('aria-current','page'); }
   document.getElementById('fab').style.display = (page==='halls'||page==='codes') ? 'flex' : 'none';
   window.scrollTo(0,0);
   if(history.replaceState) history.replaceState(null, '', '#'+page);
@@ -1906,7 +1994,7 @@ function nowIsoLocal(){
   return `${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}T${p2(now.getHours())}:${p2(now.getMinutes())}`;
 }
 async function loadMoreHalls(){
-  if(hallPage.loading || !hallPage.hasMore || hallFullyLoaded) return;
+  if(hallPage.loading || hallPage.error || !hallPage.hasMore || hallFullyLoaded) return false;
   hallPage.loading = true;
   renderHalls();
   try{
@@ -1917,30 +2005,49 @@ async function loadMoreHalls(){
     items.forEach(it=>{ if(!halls.some(h=>h.id===it.id)) halls.push(it); });
     if(snap.docs.length) hallPage.lastDoc = snap.docs[snap.docs.length-1];
     hallPage.hasMore = snap.docs.length === PAGE_SIZE;
+    hallPage.error = null;
   }catch(e){
     console.error('loadMoreHalls failed:', e);
-    hallPage.hasMore = false;
+    hallPage.error = '일정을 불러오지 못했습니다.';
+    hallPage.loading = false;
+    renderHalls();
+    return false;
   }
   hallPage.loading = false;
   renderHalls();
+  return true;
 }
 async function loadUndatedHalls(){
   try{
     const snap = await withTimeout(db.collection('hallSchedule').where('datetime','==','').get(), 8000);
     const items = snap.docs.map(d=>({id:d.id, ...d.data()}));
     items.forEach(it=>{ if(!halls.some(h=>h.id===it.id)) halls.push(it); });
-  }catch(e){ console.error('loadUndatedHalls failed:', e); }
+    return true;
+  }catch(e){ console.error('loadUndatedHalls failed:', e); return false; }
 }
 /* Search, a specific hall filter, or "지난 식 보기" all need the complete
    dataset (pagination alone can't serve them correctly), so fall back to a
    one-time full load in those cases. */
 async function ensureHallsFullyLoaded(){
-  if(hallFullyLoaded) return;
-  hallFullyLoaded = true;
-  try{ halls = await readWithFallback('hallSchedule'); }
-  catch(e){ console.error('ensureHallsFullyLoaded failed:', e); }
+  if(hallFullyLoaded || hallFullLoading) return;
+  hallFullLoading = true;
+  try{
+    halls = await readWithFallback('hallSchedule');
+    hallFullyLoaded = true;
+    hallPage.error = null;
+  }catch(e){
+    console.error('ensureHallsFullyLoaded failed:', e);
+    hallPage.error = '전체 일정을 불러오지 못했습니다.';
+  }
+  hallFullLoading = false;
   renderHalls();
   calMonthCache = {};
+}
+function retryLoadHalls(){
+  hallPage.error = null;
+  const needsFullData = document.getElementById('hallSearch').value.trim() || hallFilter!=='전체' || showPast;
+  if(needsFullData) ensureHallsFullyLoaded();
+  else loadMoreHalls();
 }
 
 function renderHalls(){
@@ -1952,8 +2059,10 @@ function renderHalls(){
   // once (cached for the rest of the session) instead of guessing.
   const needsFullData = !!q || hallFilter!=='전체' || showPast;
   if(needsFullData && !hallFullyLoaded){
-    document.getElementById('hallList').innerHTML = `<div class="loading">불러오는 중...</div>`;
-    ensureHallsFullyLoaded();
+    document.getElementById('hallList').innerHTML = hallPage.error
+      ? `<div class="empty">${escapeHtml(hallPage.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadHalls()">다시 시도</button></div>`
+      : `<div class="loading">불러오는 중...</div>`;
+    if(!hallPage.error && !hallFullLoading) ensureHallsFullyLoaded();
     return;
   }
 
@@ -1963,7 +2072,9 @@ function renderHalls(){
 
   const el = document.getElementById('hallList');
   if(list.length===0){
-    el.innerHTML = hallPage.loading
+    el.innerHTML = hallPage.error
+      ? `<div class="empty">${escapeHtml(hallPage.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadHalls()">다시 시도</button></div>`
+      : hallPage.loading
       ? `<div class="loading">불러오는 중...</div>`
       : `<div class="empty">조건에 맞는 일정이 없습니다.</div>`;
     return;
@@ -1977,14 +2088,16 @@ function renderHalls(){
       dateLabel = `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
     return `
-    <tr class="rowitem" onclick="openHallDetail('${h.id}')">
+    <tr class="rowitem" role="button" tabindex="0" data-action="hall-detail" data-id="${escapeAttr(h.id)}">
       <td><b>${escapeHtml(h.code)}</b></td>
       <td>${hallTag(h.hall)}</td>
       <td>${dateLabel}</td>
     </tr>`;
   }).join('');
 
-  const footer = (!needsFullData && hallPage.hasMore)
+  const footer = hallPage.error
+    ? `<div class="empty">${escapeHtml(hallPage.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadHalls()">다시 시도</button></div>`
+    : (!needsFullData && hallPage.hasMore)
     ? `<div class="loading" id="hallLoadMoreSentinel">${hallPage.loading ? '더 불러오는 중...' : ''}</div>`
     : '';
 
@@ -2002,6 +2115,8 @@ function setHallView(v){
   hallView = v;
   document.getElementById('viewToggleList').classList.toggle('active', v==='list');
   document.getElementById('viewToggleCal').classList.toggle('active', v==='calendar');
+  document.getElementById('viewToggleList').setAttribute('aria-pressed', String(v==='list'));
+  document.getElementById('viewToggleCal').setAttribute('aria-pressed', String(v==='calendar'));
   document.getElementById('hallListView').style.display = v==='list' ? '' : 'none';
   document.getElementById('hallCalendarView').style.display = v==='calendar' ? '' : 'none';
   if(v==='calendar') renderCalendar();
@@ -2087,7 +2202,7 @@ async function renderCalendar(){
     const items = (byDate[key]||[]).slice().sort((a,b)=>a.datetime.localeCompare(b.datetime));
     const dots = items.slice(0,4).map(h=>`<span class="cal-dot" style="background:${hallColor(h.hall)}"></span>`).join('');
     const cls = ['cal-cell', key===todayKey?'today':'', key===calSelectedDate?'selected':''].filter(Boolean).join(' ');
-    cells += `<div class="${cls}" onclick="calSelectDate('${key}')">${day}<div class="cal-dots">${dots}</div></div>`;
+    cells += `<div class="${cls}" role="button" tabindex="0" data-action="calendar-date" data-date="${escapeAttr(key)}">${day}<div class="cal-dots">${dots}</div></div>`;
   }
   document.getElementById('calGrid').innerHTML = cells;
   // Force a reflow: WebKit sometimes fails to extend a backdrop-filter'd
@@ -2104,7 +2219,7 @@ function calSelectDate(key){
   calSelectedDate = key;
   document.querySelectorAll('.cal-cell.selected').forEach(c=>c.classList.remove('selected'));
   document.querySelectorAll('.cal-cell').forEach(c=>{
-    if(c.getAttribute('onclick')===`calSelectDate('${key}')`) c.classList.add('selected');
+    if(c.dataset.date===key) c.classList.add('selected');
   });
   renderCalDayList(key, _calByDate[key]||[]);
 }
@@ -2120,7 +2235,7 @@ function renderCalDayList(key, items){
   const sorted = items.slice().sort((a,b)=>a.datetime.localeCompare(b.datetime));
   const rows = sorted.map(h=>{
     const t = h.datetime.slice(11,16);
-    return `<div class="cal-day-row" onclick="openHallDetail('${h.id}')">
+    return `<div class="cal-day-row" role="button" tabindex="0" data-action="hall-detail" data-id="${escapeAttr(h.id)}">
       <span class="time">${t}</span>
       <span class="code">${escapeHtml(h.code)}</span>
       ${hallTag(h.hall)}
@@ -2178,9 +2293,9 @@ function openHallDetail(id){
   }
   document.getElementById('hd_datetime').textContent = dl;
   document.getElementById('hd_memo').textContent = h.memo || '-';
-  document.getElementById('hallDetailOverlay').classList.add('show');
+  showOverlay('hallDetailOverlay');
 }
-function closeHallDetail(){ document.getElementById('hallDetailOverlay').classList.remove('show'); }
+function closeHallDetail(){ hideOverlay('hallDetailOverlay'); }
 
 async function requestEditHall(){
   const h = halls.find(x=>x.id===viewingHallId);
@@ -2193,6 +2308,7 @@ async function requestDeleteHall(){
   const h = halls.find(x=>x.id===viewingHallId);
   const ok = await verify(h);
   if(!ok) return;
+  if(!confirm('정말 이 일정을 삭제하시겠어요?')) return;
   const targetId = viewingHallId;
   let result;
   try{ result = await withTimeout(deleteHallSingle(targetId), 20000); }
@@ -2220,9 +2336,9 @@ function openHallModal(id){
       document.getElementById('h_datetime').value = h.datetime;
     }
   }
-  document.getElementById('hallOverlay').classList.add('show');
+  showOverlay('hallOverlay');
 }
-function closeHallModal(){ document.getElementById('hallOverlay').classList.remove('show'); }
+function closeHallModal(){ hideOverlay('hallOverlay'); }
 
 document.getElementById('hallForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -2242,9 +2358,9 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
     halls[idx] = {...halls[idx], code, hall, datetime, memo};
   }else{
     const pw = document.getElementById('h_password').value;
-    const pwHash = await hashPw(pw);
-    targetId = 'h_'+Date.now();
-    newEntry = {id:targetId, code, hall, datetime, memo, pwHash};
+    const passwordFields = await createPasswordFields(pw);
+    targetId = db.collection('hallSchedule').doc().id;
+    newEntry = {id:targetId, code, hall, datetime, memo, ...passwordFields};
     halls.push(newEntry);
   }
 
@@ -2282,7 +2398,7 @@ function setCodeFilter(c){ codeFilter=c; renderCodeChips(); renderCodes(); }
 
 /* ---------- Matching codes: paginated loading ---------- */
 async function loadMoreCodes(){
-  if(codePage.loading || !codePage.hasMore || codeFullyLoaded) return;
+  if(codePage.loading || codePage.error || !codePage.hasMore || codeFullyLoaded) return false;
   codePage.loading = true;
   renderCodes();
   try{
@@ -2293,27 +2409,47 @@ async function loadMoreCodes(){
     items.forEach(it=>{ if(!codes.some(c=>c.id===it.id)) codes.push(it); });
     if(snap.docs.length) codePage.lastDoc = snap.docs[snap.docs.length-1];
     codePage.hasMore = snap.docs.length === PAGE_SIZE;
+    codePage.error = null;
   }catch(e){
     console.error('loadMoreCodes failed:', e);
-    codePage.hasMore = false;
+    codePage.error = '짝꿍코드를 불러오지 못했습니다.';
+    codePage.loading = false;
+    renderCodes();
+    return false;
   }
   codePage.loading = false;
   renderCodes();
+  return true;
 }
 async function ensureCodesFullyLoaded(){
-  if(codeFullyLoaded) return;
-  codeFullyLoaded = true;
-  try{ codes = await readWithFallback('matchingCodes'); }
-  catch(e){ console.error('ensureCodesFullyLoaded failed:', e); }
+  if(codeFullyLoaded || codeFullLoading) return;
+  codeFullLoading = true;
+  try{
+    codes = await readWithFallback('matchingCodes');
+    codeFullyLoaded = true;
+    codePage.error = null;
+  }catch(e){
+    console.error('ensureCodesFullyLoaded failed:', e);
+    codePage.error = '전체 짝꿍코드를 불러오지 못했습니다.';
+  }
+  codeFullLoading = false;
   renderCodes();
+}
+function retryLoadCodes(){
+  codePage.error = null;
+  const needsFullData = document.getElementById('codeSearch').value.trim() || codeFilter!=='전체';
+  if(needsFullData) ensureCodesFullyLoaded();
+  else loadMoreCodes();
 }
 
 function renderCodes(){
   const q = document.getElementById('codeSearch').value.trim().toLowerCase();
   const needsFullData = !!q || codeFilter!=='전체';
   if(needsFullData && !codeFullyLoaded){
-    document.getElementById('codeList').innerHTML = `<div class="loading">불러오는 중...</div>`;
-    ensureCodesFullyLoaded();
+    document.getElementById('codeList').innerHTML = codePage.error
+      ? `<div class="empty">${escapeHtml(codePage.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadCodes()">다시 시도</button></div>`
+      : `<div class="loading">불러오는 중...</div>`;
+    if(!codePage.error && !codeFullLoading) ensureCodesFullyLoaded();
     return;
   }
 
@@ -2322,21 +2458,25 @@ function renderCodes(){
 
   const el = document.getElementById('codeList');
   if(list.length===0){
-    el.innerHTML = codePage.loading
+    el.innerHTML = codePage.error
+      ? `<div class="empty">${escapeHtml(codePage.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadCodes()">다시 시도</button></div>`
+      : codePage.loading
       ? `<div class="loading">불러오는 중...</div>`
       : `<div class="empty">조건에 맞는 항목이 없습니다.</div>`;
     return;
   }
 
   const rows = list.map(c=>`
-    <tr class="rowitem" onclick="openCodeDetail('${c.id}')">
+    <tr class="rowitem" role="button" tabindex="0" data-action="code-detail" data-id="${escapeAttr(c.id)}">
       <td><b>${escapeHtml(c.vendor)}</b></td>
-      <td><span class="hall-badge">${c.category}</span></td>
+      <td><span class="hall-badge">${escapeHtml(c.category)}</span></td>
       <td>${escapeHtml(c.sharer)}</td>
       <td>${escapeHtml(c.code)}</td>
     </tr>`).join('');
 
-  const footer = (!needsFullData && codePage.hasMore)
+  const footer = codePage.error
+    ? `<div class="empty">${escapeHtml(codePage.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadCodes()">다시 시도</button></div>`
+    : (!needsFullData && codePage.hasMore)
     ? `<div class="loading" id="codeLoadMoreSentinel">${codePage.loading ? '더 불러오는 중...' : ''}</div>`
     : '';
 
@@ -2354,9 +2494,9 @@ function openCodeDetail(id){
   document.getElementById('cd_category').textContent = c.category;
   document.getElementById('cd_sharer').textContent = c.sharer;
   document.getElementById('cd_code').textContent = c.code;
-  document.getElementById('codeDetailOverlay').classList.add('show');
+  showOverlay('codeDetailOverlay');
 }
-function closeCodeDetail(){ document.getElementById('codeDetailOverlay').classList.remove('show'); }
+function closeCodeDetail(){ hideOverlay('codeDetailOverlay'); }
 
 async function requestEditCode(){
   const c = codes.find(x=>x.id===viewingCodeId);
@@ -2369,6 +2509,7 @@ async function requestDeleteCode(){
   const c = codes.find(x=>x.id===viewingCodeId);
   const ok = await verify(c);
   if(!ok) return;
+  if(!confirm('정말 이 짝꿍코드를 삭제하시겠어요?')) return;
   const targetId = viewingCodeId;
   let result;
   try{ result = await withTimeout(deleteCodeSingle(targetId), 20000); }
@@ -2393,9 +2534,9 @@ function openCodeModal(id){
     document.getElementById('c_sharer').value = c.sharer;
     document.getElementById('c_code').value = c.code;
   }
-  document.getElementById('codeOverlay').classList.add('show');
+  showOverlay('codeOverlay');
 }
-function closeCodeModal(){ document.getElementById('codeOverlay').classList.remove('show'); }
+function closeCodeModal(){ hideOverlay('codeOverlay'); }
 
 document.getElementById('codeForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -2415,9 +2556,9 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
     codes[idx] = {...codes[idx], vendor, category, sharer, code};
   }else{
     const pw = document.getElementById('c_password').value;
-    const pwHash = await hashPw(pw);
-    targetId = 'c_'+Date.now();
-    newEntry = {id:targetId, vendor, category, sharer, code, pwHash};
+    const passwordFields = await createPasswordFields(pw);
+    targetId = db.collection('matchingCodes').doc().id;
+    newEntry = {id:targetId, vendor, category, sharer, code, ...passwordFields};
     codes.push(newEntry);
   }
 
@@ -2457,9 +2598,9 @@ function buildChecklistFormTable(){
     sec.items.forEach(it=>{
       html += `
       <div class="ck-row">
-        <label>${it.emoji?it.emoji+' ':''}${escapeHtml(it.label)}</label>
+        <label for="ck_item_${escapeAttr(it.key)}">${it.emoji?it.emoji+' ':''}${escapeHtml(it.label)}</label>
         <div class="ck-input-row">
-          <input type="text" id="ck_item_${it.key}" placeholder="입력...">
+          <input type="text" id="ck_item_${it.key}" maxlength="200" placeholder="입력...">
           <button type="button" class="ck-skip-btn" id="ck_skip_${it.key}" onclick="ckToggleSkip('${it.key}')">안함</button>
         </div>
       </div>`;
@@ -2497,9 +2638,9 @@ function openChecklistEntry(){
   document.getElementById('ck_public').checked = false;
   ckResetForm();
   showCkPwField(true);
-  document.getElementById('checklistFormOverlay').classList.add('show');
+  showOverlay('checklistFormOverlay');
 }
-function closeChecklistFormModal(){ document.getElementById('checklistFormOverlay').classList.remove('show'); }
+function closeChecklistFormModal(){ hideOverlay('checklistFormOverlay'); }
 
 async function loadMyChecklist(){
   const oid = document.getElementById('ck_ownerId').value.trim();
@@ -2549,9 +2690,9 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
       if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
       return;
     }
-    const pwHash = await hashPw(pw);
-    targetId = 'ck_'+Date.now();
-    newEntry = {id:targetId, ownerId, items, isPublic, pwHash};
+    const passwordFields = await createPasswordFields(pw);
+    targetId = db.collection('prepChecklist').doc().id;
+    newEntry = {id:targetId, ownerId, items, isPublic, ...passwordFields};
     checklists.push(newEntry);
   }
 
@@ -2590,7 +2731,7 @@ function renderChecklistList(){
     const badge = c.isPublic
       ? `<span class="hall-tag" style="background:var(--accent-tint); color:var(--accent-deep);"><i class="hall-tag-dot" style="background:var(--accent-deep)"></i>공개</span>`
       : `<span class="hall-tag" style="background:var(--neutral-tint); color:var(--ink-soft);"><i class="hall-tag-dot" style="background:var(--ink-faint)"></i>비공개</span>`;
-    return `<tr class="rowitem" onclick="openChecklistDetail('${c.id}')"><td><b>${escapeHtml(c.ownerId)}</b></td><td>${badge}</td></tr>`;
+    return `<tr class="rowitem" role="button" tabindex="0" data-action="checklist-detail" data-id="${escapeAttr(c.id)}"><td><b>${escapeHtml(c.ownerId)}</b></td><td>${badge}</td></tr>`;
   }).join('');
   el.innerHTML = `<div class="table-wrap"><table class="list-table">
     <thead><tr><th>아이디</th><th>공개여부</th></tr></thead>
@@ -2623,9 +2764,9 @@ function renderChecklistDetail(item){
     });
   });
   document.getElementById('checklistDetailTable').innerHTML = rows;
-  document.getElementById('checklistDetailOverlay').classList.add('show');
+  showOverlay('checklistDetailOverlay');
 }
-function closeChecklistDetail(){ document.getElementById('checklistDetailOverlay').classList.remove('show'); }
+function closeChecklistDetail(){ hideOverlay('checklistDetailOverlay'); }
 
 function checklistText(item){
   const lines = [];
@@ -2668,7 +2809,7 @@ async function requestEditChecklist(){
   });
   document.getElementById('ck_public').checked = !!item.isPublic;
   showCkPwField(false);
-  document.getElementById('checklistFormOverlay').classList.add('show');
+  showOverlay('checklistFormOverlay');
 }
 
 async function requestDeleteChecklist(){
@@ -2692,6 +2833,32 @@ function escapeHtml(str){
   div.textContent = str || '';
   return div.innerHTML;
 }
+function escapeAttr(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch=>({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[ch]);
+}
+
+function runDataAction(target){
+  const action = target.dataset.action;
+  if(action==='hall-detail') openHallDetail(target.dataset.id);
+  else if(action==='code-detail') openCodeDetail(target.dataset.id);
+  else if(action==='checklist-detail') openChecklistDetail(target.dataset.id);
+  else if(action==='calendar-date') calSelectDate(target.dataset.date);
+  else if(action==='partner') openPartner(target.dataset.partner);
+  else if(action==='subpage') openSub(target.dataset.subpage);
+}
+document.addEventListener('click', e=>{
+  const target = e.target.closest('[data-action]');
+  if(target) runDataAction(target);
+});
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter' && e.key!==' ') return;
+  const target = e.target.closest('[data-action]');
+  if(!target) return;
+  e.preventDefault();
+  runDataAction(target);
+});
 
 /* ============ CLICK OUTSIDE TO CLOSE ============ */
 document.querySelectorAll('.overlay').forEach(ov=>{
@@ -2705,6 +2872,33 @@ document.querySelectorAll('.overlay').forEach(ov=>{
     else if(ov.id==='checklistDetailOverlay') closeChecklistDetail();
     else if(ov.id==='checklistFormOverlay') closeChecklistFormModal();
   });
+});
+function closeOverlayFromKeyboard(overlay){
+  if(overlay.id==='pwOverlay') cancelPwPrompt();
+  else if(overlay.id==='hallOverlay') closeHallModal();
+  else if(overlay.id==='codeOverlay') closeCodeModal();
+  else if(overlay.id==='hallDetailOverlay') closeHallDetail();
+  else if(overlay.id==='codeDetailOverlay') closeCodeDetail();
+  else if(overlay.id==='checklistDetailOverlay') closeChecklistDetail();
+  else if(overlay.id==='checklistFormOverlay') closeChecklistFormModal();
+}
+document.addEventListener('keydown', e=>{
+  const pwOverlay = document.getElementById('pwOverlay');
+  const overlays = Array.from(document.querySelectorAll('.overlay.show'));
+  const overlay = pwOverlay.classList.contains('show') ? pwOverlay : overlays[overlays.length-1];
+  if(!overlay) return;
+  if(e.key==='Escape'){
+    e.preventDefault();
+    closeOverlayFromKeyboard(overlay);
+    return;
+  }
+  if(e.key!=='Tab') return;
+  const focusable = Array.from(overlay.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+    .filter(el=>!el.disabled && el.getClientRects().length>0);
+  if(!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
 });
 
 /* ============ SCROLL-REACTIVE GLASS NAV / HEADER ============ */
