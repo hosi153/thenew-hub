@@ -10,6 +10,21 @@ python3 -m http.server 4173 --bind 127.0.0.1
 
 브라우저에서 `http://127.0.0.1:4173`을 엽니다. Firebase SDK와 Firestore를 사용하므로 인터넷 연결이 필요합니다.
 
+## Vite 빌드 (2단계, 병행 구축 — 아직 배포에는 미사용)
+
+`docs/PERFORMANCE_REFACTORING_PLAN.md`의 2단계 작업물입니다. `web/` 아래에 별도로 존재하며, 루트 `index.html`(현재 GitHub Pages가 그대로 서빙 중인 운영 파일)은 전혀 건드리지 않습니다.
+
+```bash
+npm install
+npm run dev      # web/ 개발 서버
+npm run build    # dist/ 에 정적 산출물 생성
+npm run preview  # 빌드 결과물 미리보기
+```
+
+`web/index.html`이 Vite 진입점이고, `web/src/main.js` · `web/src/style.css`는 루트 `index.html`의 인라인 스크립트/스타일을 그대로 옮긴 것입니다. 기존 `onclick="..."` 같은 인라인 핸들러가 계속 동작하도록, `main.js` 끝부분에서 관련 함수를 `window`에 명시적으로 노출합니다(`tests/vite-build.test.mjs`가 이 노출이 빠짐없이 되어 있는지 빌드마다 검증합니다).
+
+**아직 GitHub Pages 배포 전환은 하지 않았습니다.** 이 빌드가 실제 기기에서 충분히 검증된 뒤, 계획 문서의 6단계(GitHub Pages 자동 배포)에서 전환을 진행할 예정입니다.
+
 ## 검증
 
 ```bash

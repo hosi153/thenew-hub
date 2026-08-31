@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>더뉴컨벤션 예신예랑 정보공유</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+
+<header class="top">
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="테마 전환">
+    <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none;"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>
+  </button>
+  <div class="eyebrow">THE NEW CONVENTION</div>
+  <h1>더뉴컨벤션 예신예랑 정보공유</h1>
+  <p>더뉴컨벤션에서 결혼하시는 분들을 위한 정보 공유 공간</p>
+</header>
+
+<div class="status-toast" id="toast" role="status" aria-live="polite"></div>
+
+<main>
+
+  <!-- ================= HOME ================= -->
+  <section class="page active" id="page-home">
+    <div class="kicker">OVERVIEW</div><div class="section-title">홈</div>
+    <div class="card">
+      <span class="tag">공지</span>
+      <p>견적 공유는 삼가주세요.</p>
+      <p>사담이 많은 방입니다. 질문은 언제든 환영합니다.</p>
+      <p>건의사항은 방장·부방장에게 연락 부탁드립니다.</p>
+    </div>
+
+    <div class="card">
+      <h3>새로 열린 제휴 혜택</h3>
+      <div style="display:flex; align-items:center; gap:9px; margin:9px 0 3px;">
+        <span class="tag" style="margin:0;">사회</span><b style="font-size:13.5px;">조유진mc</b>
+      </div>
+      <p class="muted" style="margin:0 0 12px;">진행비 10% 할인 + 음원 무료 제공</p>
+      <div style="display:flex; align-items:center; gap:9px; margin:9px 0 3px;">
+        <span class="tag" style="margin:0;">한복</span><b style="font-size:13.5px;">느와한복</b>
+      </div>
+      <p class="muted" style="margin:0 0 12px;">혼주한복 25만원·신랑신부 40만원 (~26.12.31 예약분)</p>
+      <div style="display:flex; align-items:center; gap:9px; margin:9px 0 3px;">
+        <span class="tag" style="margin:0;">청첩장</span><b style="font-size:13.5px;">메리지포켓</b>
+      </div>
+      <p class="muted" style="margin:0;">종이·모바일 청첩장 제휴 할인</p>
+      <button class="btn btn-ghost btn-block" onclick="go('partners')" style="margin-top:8px;">제휴업체 전체 보기</button>
+    </div>
+
+    <div class="card">
+      <h3>톡방 이용 안내</h3>
+      <p>닉네임은 <b>예식년월+닉네임 / 웨딩홀 이름</b>으로 설정해주세요.</p>
+      <p class="muted">예: 2606 대게신랑 / 더뉴홀 · 미설정 시 강제 퇴장될 수 있어요.</p>
+      <p>사담이 많으니 알림은 꺼두는 걸 추천드려요. 질문은 언제든 환영입니다.</p>
+      <p class="muted">평일 9~18시가 가장 활발하고, 이후엔 조용해지는 편이에요.</p>
+    </div>
+
+    <div class="card" id="weekCard" style="display:none;">
+      <h3>🎉 이번 주 예식이 있어요</h3>
+      <div id="weekList"></div>
+    </div>
+
+    <div class="row2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:130px;">
+      <button class="btn btn-outline" onclick="go('halls')">홀 일정 보기</button>
+      <button class="btn btn-outline" onclick="go('codes')">짝꿍코드 보기</button>
+    </div>
+  </section>
+
+  <!-- ================= HALL SCHEDULE ================= -->
+  <section class="page" id="page-halls">
+    <div class="kicker">SCHEDULE</div><div class="section-title">홀 예식 일정</div>
+    <p class="section-sub">홀별 예식 일정을 확인하고, 본인 일정을 직접 등록해주세요.</p>
+
+    <div class="view-toggle">
+      <button class="chip" id="viewToggleList" aria-pressed="false" onclick="setHallView('list')">목록</button>
+      <button class="chip active" id="viewToggleCal" aria-pressed="true" onclick="setHallView('calendar')">달력</button>
+    </div>
+
+    <div id="hallListView" style="display:none;">
+      <input class="search" id="hallSearch" aria-label="일정 코드 검색" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="renderHalls()">
+      <div class="chiprow" id="hallChips"></div>
+      <label class="past-toggle">
+        <input type="checkbox" id="showPastToggle" onchange="setShowPast(this.checked)">
+        <span>지난 식 보기</span>
+      </label>
+      <div id="hallList"><div class="loading">불러오는 중...</div></div>
+    </div>
+
+    <div id="hallCalendarView">
+      <div class="cal-nav">
+        <button aria-label="이전 달" onclick="calShiftMonth(-1)">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button aria-label="다음 달" onclick="calShiftMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i class="cal-dot" style="background:#3355FF"></i>제니스홀</span>
+        <span><i class="cal-dot" style="background:#D98F2B"></i>더뉴홀</span>
+        <span><i class="cal-dot" style="background:#C2447A"></i>르노브홀</span>
+      </div>
+      <div class="cal-daylist" id="calDayList"></div>
+    </div>
+  </section>
+
+  <!-- ================= MATCHING CODES ================= -->
+  <section class="page" id="page-codes">
+    <div class="kicker">REFERRAL CODE</div><div class="section-title">짝꿍코드</div>
+    <p class="section-sub">먼저 계약한 분들의 짝꿍코드를 확인하고, 본인 것도 등록해주세요.</p>
+
+    <input class="search" id="codeSearch" aria-label="짝꿍코드 검색" placeholder="업체명 / 닉네임으로 검색..." autocomplete="off" oninput="renderCodes()">
+    <div class="chiprow" id="codeChips"></div>
+
+    <div id="codeList"><div class="loading">불러오는 중...</div></div>
+  </section>
+
+  <!-- ================= PARTNERS ================= -->
+  <section class="page" id="page-partners">
+
+    <div id="partners-menu">
+      <div class="kicker">PARTNERS</div><div class="section-title">제휴 업체 정보</div>
+      <p class="section-sub">더뉴컨벤션 예신예랑 전용 제휴 혜택입니다. 행을 눌러 상세내용을 확인하세요.</p>
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead><tr><th>업체명</th><th>카테고리</th></tr></thead>
+          <tbody>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="botti"><td><b>보띠데일리</b></td><td><span class="hall-badge">스드메·본식</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="veilblanc"><td><b>베일드블랑 X 디어마이</b></td><td><span class="hall-badge">스드메</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="onto"><td><b>온투필름</b></td><td><span class="hall-badge">스냅</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="miyu"><td><b>미유스냅</b></td><td><span class="hall-badge">아이폰스냅</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="daege"><td><b>대게 사진관</b></td><td><span class="hall-badge">서브스냅</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="muze"><td><b>무제 스냅&DVD</b></td><td><span class="hall-badge">본식DVD</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="daegeretouch"><td><b>대게 보정공장</b></td><td><span class="hall-badge">사설보정</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="jungwoori"><td><b>정우리웨딩보정</b></td><td><span class="hall-badge">사설보정</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="hanbok"><td><b>느와한복</b></td><td><span class="hall-badge">한복</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="marketb"><td><b>마켓비</b></td><td><span class="hall-badge">가구</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="mc"><td><b>조유진mc</b></td><td><span class="hall-badge">사회</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="yelove"><td><b>YELOVE 예러브</b></td><td><span class="hall-badge">식전·식중영상</span></td></tr>
+            <tr class="rowitem" role="button" tabindex="0" data-action="partner" data-partner="invite"><td><b>메리지포켓</b></td><td><span class="hall-badge">청첩장</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-botti">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">스드메 · 본식 패키지</span>
+        <h3>보띠데일리</h3>
+        <div class="row"><span>예약문의</span><span>010-2776-3328</span></div>
+        <div class="row"><span>문자 양식</span><span style="text-align:left; max-width:65%;">더뉴 / 이름 / 예식일 / 풀패키지</span></div>
+        <div class="row"><span>짝꿍코드</span><span>쩌밍2409</span></div>
+        <p class="muted">반드시 위 번호로만 문의해주세요. 보띠데일리에 직접 연락하지 않도록 유의해주세요. 더뉴방 전용 제휴이니 외부에는 공유하지 말아주세요.</p>
+      </div>
+      <div class="card">
+        <h3>상품</h3>
+        <div class="row"><span>스드메+본식 풀패키지</span><span>245만원 (정상가 250만원)</span></div>
+        <p class="muted">드레스 3벌 무료 + 턱시도 1벌당 10만원, 드레스 추가금 없음, 악세사리 장식 무료</p>
+        <div class="row"><span>제주스냅 토탈</span><span>150만원</span></div>
+        <p class="muted">드레스 3벌(또는 드레스2+한복1) + 헤메 + 촬영예복대여 + 헤어변형헬퍼 + 보정본 20장 + 원본</p>
+      </div>
+      <div class="card">
+        <h3>추가비용</h3>
+        <p>· 스튜디오 원본 구매 (스튜디오마다 상이)</p>
+        <p>· 본식스냅 원본 구매</p>
+        <p>· 헬퍼비</p>
+        <p>· 본식스냅 앨범 (신랑신부앨범 + 혼주 작은앨범 2권)</p>
+      </div>
+      <div class="card">
+        <h3>할인</h3>
+        <div class="row"><span>짝꿍이벤트</span><span>5만원 + 짝꿍코드 발급</span></div>
+        <div class="row"><span>짝꿍코드 페이백</span><span>본인 5만 + 계약자 5만 (무제한)</span></div>
+        <div class="row"><span>블로그 후기</span><span>3만원</span></div>
+        <p class="muted">본인+짝꿍 둘 다 풀패키지 계약 시 페이백 무제한. 방장은 페이백을 받지 않고 전부 신부님 할인으로 적용됩니다.</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-veilblanc">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">토탈 스드메 · 강서구</span>
+        <h3>베일드블랑 X 디어마이</h3>
+        <div class="row"><span>제휴</span><span>디어마이 제휴 (만덕님)</span></div>
+        <div class="row"><span>문의</span><span style="text-align:left; max-width:65%;">베일드블랑 네이버 톡톡 ("디어마이" 언급 후 예약)</span></div>
+        <div class="actions">
+          <a class="btn btn-outline btn-block" href="https://www.instagram.com/veil_de_blanc" target="_blank">인스타그램</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>상품</h3>
+        <div class="row"><span>토탈 스드메</span><span style="text-align:left; max-width:60%;">촬영드레스 3벌 + 남자촬영예복 1벌 / 본식드레스 1벌 + 2부드레스 + 남자본식예복 1벌 / 신랑신부 메이크업 2회 / 스튜디오 포함(약 20곳 제휴)</span></div>
+        <div class="row"><span>본식 드메</span><span style="text-align:left; max-width:60%;">본식드레스 1벌 + 2부드레스 + 남자예복 1벌 / 신랑신부 메이크업 1회</span></div>
+        <p class="muted">얼리스타트, 웨딩슈즈, 헤어피스, 악세서리, 베일 포함</p>
+      </div>
+      <div class="card">
+        <h3>할인 (최대 24만원)</h3>
+        <div class="row"><span>디어마이 제휴</span><span>20만원</span></div>
+        <div class="row"><span>블로그 후기</span><span>2만원</span></div>
+        <div class="row"><span>카페 후기</span><span>2만원</span></div>
+        <p class="muted">가격 비공개, 부담없이 문의 가능. 재피팅·드레스 선택에 관대한 샵이며 신상 드레스가 자주 입고됩니다. 문의 시 반드시 "디어마이" 언급해주세요.</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-onto">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">스냅</span>
+        <h3>온투필름 (ONTO FILM)</h3>
+        <p>제휴 혜택: 모든 상품 색보정본 이미지 5장 추가 제공 ("더뉴컨벤션에서 보고왔어요" 라고 말씀해주세요)</p>
+        <div class="actions">
+          <a class="btn btn-outline btn-block" href="https://www.instagram.com/ontofilm2026" target="_blank">포트폴리오 (인스타그램)</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>패키지</h3>
+        <div class="row"><span>Light (2시간)</span><span>40만원 (SNS 미동의 시 50만원)</span></div>
+        <p class="muted">장소 1곳 / 의상 1~2벌, 보정본 최대 20장, 원본 전컷 JPG 제공</p>
+        <div class="row"><span>Standard (4시간)</span><span>75만원 (85만원)</span></div>
+        <p class="muted">장소 2~3곳 / 의상 2~3벌, 보정본 최대 40장, 가장 선호도 높은 시그니처 구성</p>
+        <div class="row"><span>Premium (6시간)</span><span>110만원 (120만원)</span></div>
+        <p class="muted">장소·의상 제한 없음, 보정본 최대 60장, 낮부터 야간까지 올데이 구성</p>
+      </div>
+      <div class="card">
+        <h3>추가 옵션</h3>
+        <div class="row"><span>촬영 연장 (1시간)</span><span>15만원</span></div>
+        <div class="row"><span>긴급 보정 서비스</span><span>10만원 (1주일 내 우선 수령)</span></div>
+        <p class="muted">사전 예약제 (예약금 완료 시 확정) · 최종 보정본은 셀렉일로부터 30일 이내 제공 · 결과물은 포트폴리오·마케팅 용도로 사용될 수 있으며 비공개 원할 시 미리 말씀해주세요.</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-miyu">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">아이폰스냅 · 2027년 상품</span>
+        <h3>미유스냅</h3>
+        <p>강서구 화곡동에 거주하는 1인 대표 작가가 촬영과 보정을 직접 진행합니다. 더뉴컨벤션까지 30분 이내 거리로 가까워, 이동 시간과 에너지를 아끼는 만큼 더뉴컨벤션 신부님께 전용 혜택을 제공합니다.</p>
+        <p class="muted">빠른 카카오톡 응대 · 사업자등록 및 현금영수증 발급 가능 · 현금영수증 발급 시 영수증 공유</p>
+        <div class="actions">
+          <a class="btn btn-outline btn-block" href="https://open.kakao.com/o/sB6PHYWg" target="_blank">카카오톡 오픈채팅 상담</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="tag">스탠다드</span>
+        <h3>18만원</h3>
+        <p>· 본식 90분 전부터 신부대기실, 본식, 플라워샤워까지 촬영</p>
+        <p>· 원본 800장 이상 및 짧은 영상 다수 제공</p>
+        <p>· 보정본 15장 및 릴스 제공</p>
+        <p>· 땡큐카드: 혼주용 2종, 신랑신부용 1종</p>
+        <p class="muted">짧은 영상은 평균 50개 이상이며 연출 시간과 연출컷에 따라 제공 수량이 달라질 수 있습니다.</p>
+      </div>
+
+      <div class="card">
+        <span class="tag">프리미엄</span>
+        <h3>22만원</h3>
+        <p>· 본식 90분 전부터 신부대기실, 본식, 플라워샤워, 원판, 반딧불이샷, 퇴장까지 촬영</p>
+        <p>· 원본 900장 이상 및 짧은 영상 다수 제공</p>
+        <p>· 보정본 20장 제공</p>
+        <p>· 결혼식 전 과정을 담은 5분 내외 하이라이트 영상 제공</p>
+        <p>· 땡큐카드: 혼주용 2종, 신랑신부용 2종</p>
+        <p class="muted">DVD가 없는 분께 추천하는 구성입니다. 연출 시간과 연출컷에 따라 제공 수량이 달라질 수 있습니다.</p>
+      </div>
+
+      <div class="card">
+        <h3>상품 차이</h3>
+        <p>· 촬영 시간과 촬영 범위</p>
+        <p>· 보정본 수량</p>
+        <p>· 결혼 하이라이트 영상 제공 여부</p>
+        <p>· 땡큐카드 수량</p>
+      </div>
+
+      <div class="card">
+        <h3>제휴 가격 적용 조건</h3>
+        <p>초상권 마케팅 동의 또는 블로그 후기 2건 작성 중 한 가지를 선택해야 제휴 가격으로 촬영할 수 있습니다.</p>
+        <div class="row"><span>2027년 정상가</span><span style="text-align:left; max-width:65%;">스탠다드 30만원 · 프리미엄 35만원</span></div>
+        <div class="row"><span>블로그 후기 선택</span><span style="text-align:left; max-width:65%;">촬영비에 2만원 추가 결제 후 본식 후기 작성 시 2만원 페이백</span></div>
+        <p class="muted">예: 프리미엄은 24만원 결제 후 후기 작성 시 2만원을 돌려받아 최종 결제금액은 22만원입니다.</p>
+      </div>
+
+      <div class="card">
+        <h3>안내</h3>
+        <p>· 대표 작가가 촬영과 보정을 모두 직접 진행합니다.</p>
+        <p>· 빠른 소통을 중요하게 여기며 카카오톡 확인 후 신속하게 답변합니다.</p>
+        <p>· 더뉴컨벤션과 가까워 여유 있게 도착하며, 보조대기실 이용 시점 또는 드레스 착용 전부터 대기할 수 있습니다.</p>
+        <p>· 프리미엄 하이라이트 영상은 연출컷부터 반딧불이샷까지 담아 정식 DVD 수령 전 결혼식의 추억을 확인하기 좋습니다.</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-daege">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">서브스냅 · 촬영스냅</span>
+        <h3>대게 사진관</h3>
+        <div class="row"><span>제휴</span><span>더뉴컨벤션 전문</span></div>
+        <div class="actions">
+          <a class="btn btn-outline btn-sm" href="https://naver.me/Gdl9u7lI" target="_blank">신청서</a>
+          <a class="btn btn-outline btn-sm" href="https://open.kakao.com/o/sHiAqz0h" target="_blank">상담</a>
+          <a class="btn btn-ghost btn-sm" href="https://www.instagram.com/big_crab_snap" target="_blank">웨딩 인스타</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>상품</h3>
+        <div class="row"><span>본식 서브 스냅</span><span>35만원</span></div>
+        <p class="muted">본식서브 + 원판서브 / 정밀보정 30장 / 원본 JPG 전체</p>
+        <div class="row"><span>촬영 스냅</span><span>15만원</span></div>
+        <p class="muted">야외스냅 (서울·경기 출장비 없음, 주말만) / 정밀보정 20장 / 원본 JPG 전체</p>
+        <div class="row"><span>스냅 패키지</span><span>40만원</span></div>
+        <p class="muted">야외스냅 + 본식서브 / 보정 합산 / 원본 JPG 전체</p>
+      </div>
+      <div class="card">
+        <h3>비고</h3>
+        <p>· 신부님 개인컷 비중이 높고 아이돌 스타일 보정</p>
+        <p>· 보정본 당일~다음날 제공, 무한 재요청 가능</p>
+        <p>· 본식 포함 희망 촬영 가능 (신부대기실, 피로연 인사)</p>
+        <p>· 예약: 신청서 작성 → 카톡 스케줄 조율 → 예약금 입금</p>
+        <p class="muted">단순 변심으로 인한 취소 시 환불 불가</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-muze">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">본식 DVD</span>
+        <h3>무제 스냅&DVD</h3>
+        <div class="row"><span>제휴</span><span>더뉴단톡방 제휴</span></div>
+        <div class="row"><span>추천인코드</span><span>250531키라콩</span></div>
+        <div class="actions">
+          <a class="btn btn-outline btn-sm" href="https://www.instagram.com/muze.official" target="_blank">인스타그램</a>
+          <a class="btn btn-ghost btn-sm" href="https://m.youtube.com/@muze0601" target="_blank">유튜브</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>할인</h3>
+        <div class="row"><span>단톡방 제휴</span><span>3만원</span></div>
+        <div class="row"><span>짝꿍할인</span><span>3만원 (2명 동시계약, 하루 차이 OK)</span></div>
+        <div class="row"><span>소개할인</span><span>추천인 코드 입력 시 별도</span></div>
+        <p class="muted">모든 할인 동시 적용 가능. 기존 계약자도 단톡방 제휴 3만원 소급 적용(촬영 미진행자). 문의 시 "더뉴단톡방에서 키라소개로 왔다"고 말씀해주세요. DVD 고민 중이라면 단톡방에서 짝꿍 구해 동시 진행을 추천드려요.</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-daegeretouch">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">사설보정</span>
+        <h3>대게 보정공장</h3>
+        <div class="row"><span>일반</span><span>1장당 4,000원</span></div>
+        <div class="row"><span>촬영 상품 구매자</span><span>1장당 3,000원</span></div>
+        <div class="row"><span>하늘합성 · 특수합성</span><span>추가금 없음</span></div>
+        <div class="actions">
+          <a class="btn btn-outline btn-block" href="https://open.kakao.com/o/sHiAqz0h" target="_blank">상담 문의</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-jungwoori">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">사설보정</span>
+        <h3>정우리웨딩보정</h3>
+        <div class="row"><span>결제</span><span>카드결제 / 현금영수증 가능</span></div>
+        <p class="muted">샘플보정을 꼭 받아보시고, 요청사항은 세세하게 전달할수록 좋습니다.</p>
+        <div class="actions">
+          <a class="btn btn-outline btn-block" href="https://open.kakao.com/o/sHZPTL6f" target="_blank">상담 문의</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-marketb">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">신혼집 가구</span>
+        <h3>마켓비</h3>
+        <div class="row"><span>제휴</span><span>직원 할인가 (토끼님)</span></div>
+        <div class="row"><span>문의</span><span>토끼님 개인 톡</span></div>
+        <div class="actions">
+          <a class="btn btn-outline btn-sm" href="https://marketb.kr/index.html" target="_blank">자사몰</a>
+          <a class="btn btn-ghost btn-sm" href="https://brand.naver.com/marketb" target="_blank">네이버 스토어</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>할인</h3>
+        <div class="row"><span>할인율</span><span>제품가 + 옵션(조립/출장) 20% 할인</span></div>
+        <div class="row"><span>배송비</span><span>별도</span></div>
+        <div class="row"><span>결제</span><span>무통장 입금 (농협·우리·신한·하나)</span></div>
+        <div class="row"><span>현금영수증</span><span>48시간 내 발행 (수정불가)</span></div>
+      </div>
+      <div class="card">
+        <h3>추천 · 비추천</h3>
+        <p><b>추천</b> — 심플리, 철제 캐비넷, 트롤리, 조명</p>
+        <p><b>비추천</b> — 라탄, 러그, 침대</p>
+        <p class="muted">직접 조립을 추천드려요(CS 어려움). 토끼님 퇴사 시 직원가 구매가 불가능해질 수 있고, 평일 08:30~18:00 이후엔 확인이 늦을 수 있어요.</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-mc">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">사회</span>
+        <h3>조유진mc</h3>
+        <p>차분하고 품격 있는 진행 + 위트와 다정함이 배어나는 멘트. 신부입장곡·신랑입장곡·행진곡 음원 무료 제공. (유튜브 '지금의 목소리' 검색)</p>
+        <div class="row"><span>2026 하반기</span><span>22.5만원 (정상 25만원)</span></div>
+        <div class="row"><span>2027 상반기</span><span>27만원 (정상 30만원)</span></div>
+        <div class="row"><span>2027 하반기</span><span>31.5만원 (정상 35만원)</span></div>
+        <p class="muted">추가할인: 지인소개·얼리버드·블로그후기 각 1만원, 본식후기 페이백 3만원</p>
+        <p class="muted">부가서비스: 맞춤형 사회 대본, 축가 대행 3만원, 혼인서약서·성혼선언문 작성 2만원</p>
+        <div class="actions">
+          <a class="btn btn-outline btn-sm" href="https://pf.kakao.com/_xlRSPX" target="_blank">카카오 채널 문의</a>
+          <a class="btn btn-ghost btn-sm" href="https://www.instagram.com/yoojin_winter/" target="_blank">인스타그램</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-hanbok">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">한복</span>
+        <h3>느와한복</h3>
+        <p>혼주한복·신랑신부 2부한복 대여. ~2026/12/31 예약분까지 할인 적용 (예식일 무관).</p>
+        <div class="row"><span>혼주한복 (인당)</span><span>25만원 (정상 35만원)</span></div>
+        <div class="row"><span>신랑신부 2인 set</span><span>40만원</span></div>
+        <div class="row"><span>남성 성인 한복</span><span>15만원 균일가</span></div>
+        <p class="muted">네이버 플레이스 리뷰 1만원, 피팅 후기 2만원, 행사후 후기 페이백 2만원 할인</p>
+        <p class="muted">100% 피팅 예약제 (피팅비 인당 3만원, 최대 3벌) · 전날 대여 가능, 익일 반납 가능</p>
+        <p class="muted">주소: 서울 강서구 마곡중앙4로 22 A동 3층 308호</p>
+        <div class="actions">
+          <a class="btn btn-outline btn-sm" href="https://pf.kakao.com/_xlRSPX" target="_blank">상담 문의</a>
+          <a class="btn btn-ghost btn-sm" href="https://litt.ly/nwahanbok" target="_blank">홈페이지</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-yelove">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+      <div class="card">
+        <span class="tag">식전영상 · 식중영상</span>
+        <h3>YELOVE 예러브</h3>
+        <p>사진 한 장과 문장 하나에도 마음을 담아 두 분만의 특별한 영상을 제작합니다. 평생 한 번뿐인 날의 설렘을 오래 간직할 수 있도록 예러브만의 따뜻한 감성으로 정성껏 완성합니다.</p>
+        <div class="actions" style="flex-wrap:wrap;">
+          <a class="btn btn-outline btn-sm" href="https://yelove.notion.site/YELOVE-1d7606ea8fdf80c9a995c00b0bed3557?pvs=143" target="_blank">홈페이지</a>
+          <a class="btn btn-ghost btn-sm" href="https://www.instagram.com/yelove_wedding" target="_blank">인스타그램</a>
+          <a class="btn btn-primary btn-sm" href="https://pf.kakao.com/_fxlswn" target="_blank">카카오톡 주문 문의</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>예러브가 특별한 이유</h3>
+        <p><b>두 가지 타입의 맞춤형 식전영상</b></p>
+        <p class="muted">사진 중심부터 영상 중심까지 원하는 구성을 선택할 수 있습니다. 사진이나 영상이 많아도 두 분의 추억과 취향에 맞춰 구성합니다.</p>
+        <p><b>사진 한 장까지 세심한 제작</b></p>
+        <p class="muted">사진을 단순 나열하는 공장형 방식이 아니라, 전달받은 사진과 영상의 분위기에 가장 어울리는 구성으로 제작합니다.</p>
+      </div>
+
+      <div class="card">
+        <h3>카카오톡 주문 특별 혜택</h3>
+        <p>· 수정 1회 추가 무료</p>
+        <p>· 식전영상과 식중영상 동시 구매 시 20,000원 할인</p>
+        <p>· 진행 중인 이벤트 할인과 중복 적용 가능</p>
+      </div>
+
+      <div class="card">
+        <h3>상품 구성</h3>
+        <div class="row"><span>식중영상 · 디어러브</span><span style="text-align:left; max-width:62%;">부모님께 전하고 싶은 감사와 사랑을 따뜻한 필름 감성으로 담아낸 감사영상</span></div>
+        <div class="row"><span>식전영상 · 로즈러브</span><span style="text-align:left; max-width:62%;">빈티지하고 로맨틱한 감성의 식전영상</span></div>
+        <div class="row"><span>식전영상 · 데이지러브</span><span style="text-align:left; max-width:62%;">러블리한 감성과 따뜻함을 담은 식전영상</span></div>
+      </div>
+    </div>
+
+    <div class="subpage" id="partner-invite">
+      <button class="back-link" onclick="closePartner()">‹ 제휴업체 목록으로</button>
+
+      <div class="card">
+        <span class="tag">청첩장</span>
+        <h3>더뉴컨벤션 X 메리지포켓</h3>
+        <p>종이·모바일 청첩장 제휴. 사이즈업 + 스티커·봉투 수량만큼 무료 제공.</p>
+        <div class="actions" style="flex-direction:column;">
+          <a class="btn btn-primary btn-block" href="https://naver.me/xzHhusPT" target="_blank">종이 청첩장 구매하기</a>
+          <a class="btn btn-primary btn-block" href="https://naver.me/GEd4feFt" target="_blank">모바일 청첩장 구매하기</a>
+          <a class="btn btn-outline btn-block" href="https://linktr.ee/marrage_pocket" target="_blank">문의 · 링크트리</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>제휴 기본 혜택</h3>
+        <p>· 청첩장 사이즈업</p>
+        <p>· 스티커, 봉투 청첩장 수량만큼 제공</p>
+        <p>· 모바일 청첩장</p>
+        <div class="divider"></div>
+        <h3>후기 이벤트</h3>
+        <p>· 후기 작성 시 혼주용 모바일 청첩장 제공</p>
+      </div>
+
+      <div class="card">
+        <h3>모바일 청첩장 제작 방법</h3>
+        <p>· 청첩장 구매 후 <a href="https://linktr.ee/marrage_pocket" target="_blank">링크트리</a> 최상단 모바일 청첩장 에디터를 통해 제작</p>
+        <p>· 모바일 청첩장 도메인 생성 후 톡톡이나 오픈채팅으로 문의하면 워터마크 제거</p>
+      </div>
+
+      <div class="card">
+        <h3>제휴 혜택 적용방법</h3>
+        <p>① 제휴 할인 네이버 스마트스토어에서 구매</p>
+        <p>② 봉투 스티커 옵션 선택</p>
+        <p>③ 사이즈업, 모바일 청첩장 체크 해제</p>
+        <p>④ 구매 후 네이버 톡톡 OR 카카오톡 오픈채팅으로 "더뉴 제휴 구매했습니다" 메시지 발송</p>
+      </div>
+
+      <div class="card">
+        <span class="tag">종이청첩장</span>
+        <h3>랑데뷰 240g 2단 청첩장</h3>
+        <div class="row"><span>100매</span><span>99,000원</span></div>
+        <div class="row"><span>150매</span><span>145,000원 → <b>116,000원</b></span></div>
+        <div class="row"><span>200매</span><span>180,000원 → <b>144,000원</b></span></div>
+        <div class="row"><span>250매</span><span>220,000원 → <b>176,000원</b></span></div>
+        <div class="row"><span>300매</span><span>250,000원 → <b>200,000원</b></span></div>
+        <div class="row"><span>350매</span><span>280,000원 → <b>224,000원</b></span></div>
+        <div class="row"><span>400매</span><span>300,000원 → <b>240,000원</b></span></div>
+      </div>
+
+      <div class="card">
+        <span class="tag">종이청첩장</span>
+        <h3>스노우 300g 엽서형 청첩장</h3>
+        <div class="row"><span>100매</span><span>51,000원</span></div>
+        <div class="row"><span>150매</span><span>95,600원 → <b>76,500원</b></span></div>
+        <div class="row"><span>200매</span><span>127,500원 → <b>102,000원</b></span></div>
+        <div class="row"><span>250매</span><span>160,000원 → <b>127,500원</b></span></div>
+        <div class="row"><span>300매</span><span>191,000원 → <b>153,000원</b></span></div>
+        <div class="row"><span>350매</span><span>223,000원 → <b>178,500원</b></span></div>
+        <div class="row"><span>400매</span><span>255,000원 → <b>204,000원</b></span></div>
+      </div>
+
+      <div class="card">
+        <span class="tag">종이청첩장</span>
+        <h3>반누보 320g 엽서형 청첩장</h3>
+        <div class="row"><span>100매</span><span>66,000원</span></div>
+        <div class="row"><span>150매</span><span>124,000원 → <b>99,000원</b></span></div>
+        <div class="row"><span>200매</span><span>165,000원 → <b>132,000원</b></span></div>
+        <div class="row"><span>250매</span><span>206,000원 → <b>165,000원</b></span></div>
+        <div class="row"><span>300매</span><span>247,500원 → <b>204,000원</b></span></div>
+        <div class="row"><span>350매</span><span>289,000원 → <b>231,000원</b></span></div>
+        <div class="row"><span>400매</span><span>330,000원 → <b>264,000원</b></span></div>
+      </div>
+
+      <div class="card">
+        <span class="tag">모바일청첩장</span>
+        <h3>모바일 청첩장</h3>
+        <div class="row"><span>셀프 제작</span><span>9,900원 → <b>7,900원</b></span></div>
+        <div class="row"><span>제작대행</span><span>22,900원 → <b>9,900원</b></span></div>
+        <p class="muted">구매 후 오픈채팅/톡톡으로 "더뉴 제휴 구매했습니다" 메시지 발송 필요</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ================= MORE / INFO HUB ================= -->
+  <section class="page" id="page-more">
+
+    <div id="more-menu">
+      <div class="kicker">RESOURCES</div><div class="section-title">정보 모음</div>
+      <div class="info-list">
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="hallinfo"><span class="l"><span class="dot"></span>홀 기본정보</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="terms"><span class="l"><span class="dot"></span>용어 설명</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="bouquet"><span class="l"><span class="dot"></span>부케 안내</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="parking"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="checklist"><span class="l"><span class="dot"></span>예식 준비 체크리스트</span><span class="arrow">›</span></div>
+        <a class="info-link" href="https://docs.google.com/spreadsheets/d/1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/edit?usp=sharing" target="_blank"><span class="l"><span class="dot"></span>예식 양식 모음</span><span class="arrow">↗</span></a>
+        <a class="info-link" href="https://drive.google.com/drive/folders/1sFr7egHVGCvKwgTpKY7B2ZO310Ecx5-D?usp=drive_link" target="_blank"><span class="l"><span class="dot"></span>예식 음원 모음</span><span class="arrow">↗</span></a>
+      </div>
+    </div>
+
+    <div class="subpage" id="sub-hallinfo">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">홀 기본정보</div>
+      <div class="card">
+        <h3>노래 / BGM</h3>
+        <p>노래는 뮤지컬 / 재즈(홀 기본) / MR 중 선택 가능. 비용은 필수 지불이며, MR 준비 시 목록 외 곡 지정도 가능합니다.</p>
+        <table class="data">
+          <tr><th>순서</th><th>항목</th><th>재즈(기본)</th></tr>
+          <tr><td>1</td><td>오프닝</td><td>-</td></tr>
+          <tr><td>2</td><td>화촉점화</td><td>꽃날 (황진이 OST)</td></tr>
+          <tr><td>3</td><td>신랑입장</td><td>Mo' Better Blues (OST)</td></tr>
+          <tr><td>4</td><td>신부입장</td><td>How long will I love you</td></tr>
+          <tr><td>5</td><td>혼인서약/성혼선언</td><td>Love Affair (Ennio Morricone)</td></tr>
+          <tr><td>6</td><td>부모님/내빈 인사</td><td>Misty</td></tr>
+          <tr><td>7</td><td>행진곡</td><td>Have a nice day (Vito)</td></tr>
+        </table>
+        <p class="muted">뮤지컬 선택 시 오프닝/신랑입장/신부입장 등 곡 목록 별도 (2인 기준). 재즈 곡 미리듣기는 노션 원본에서 유튜브 링크로 확인 가능합니다.</p>
+      </div>
+      <div class="card">
+        <h3>시식</h3>
+        <div class="row"><span>인원</span><span>4인 무료 / 1인 추가시 4만원</span></div>
+        <div class="row"><span>예약 가능 시점</span><span>결혼식 2달 전부터</span></div>
+        <div class="row"><span>예약 방법</span><span>방문 2주 전 예약 전화</span></div>
+        <div class="row"><span>시식 시간</span><span>예약일 "첫 식" 시간</span></div>
+      </div>
+    </div>
+
+    <div class="subpage" id="sub-terms">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">용어 설명</div>
+      <div class="card">
+        <h3>본식 사진</h3>
+        <div class="row"><span>원판</span><span style="text-align:left; max-width:70%;">식 끝나고 다같이 찍는 단체 사진</span></div>
+        <div class="row"><span>메인 스냅</span><span style="text-align:left; max-width:70%;">식 전체 촬영 + 연출/디렉팅 담당</span></div>
+        <div class="row"><span>서브 스냅</span><span style="text-align:left; max-width:70%;">메인이 못 잡는 부분, 부모님 촬영</span></div>
+        <div class="row"><span>아이폰 스냅</span><span style="text-align:left; max-width:70%;">빠른 전달, 친구가 찍어준 듯한 느낌</span></div>
+      </div>
+      <div class="card">
+        <h3>더뉴컨벤션 포함 항목</h3>
+        <p><b>웨딩리셉션</b> — 로봇 간식, 축포 등 축하 연출</p>
+        <p><b>재즈 4중주</b> — MR 미준비시 연주자 직접 연주</p>
+        <p><b>포토T 셋팅</b> — 5x7 사진 7장 준비시 셋팅해줌</p>
+        <p><b>뮤지컬 2인</b> — MR 미준비시 배우 2명 직접 공연</p>
+        <p><b>부케(꽃다발)</b> — 본식부케 또는 꽃다발 2개로 변경 가능</p>
+        <p><b>식전영상(상영)</b> — 준비해가면 상영해줌</p>
+        <p><b>컨시어즈</b> — 짐 운반, 홀 안내 전담 직원</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="sub-bouquet">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">부케 안내</div>
+      <div class="card">
+        <div class="row"><span>기본 라인</span><span>별도 추가금 없음</span></div>
+        <div class="row"><span>프리미엄 라인</span><span>15만원 추가금</span></div>
+        <p class="muted">부케 디자인 사진은 종류가 많아 노션 원본 페이지에서 확인해주세요.</p>
+        <a class="btn btn-outline btn-block" href="https://app.notion.com/p/369b5443831281e5852fe8e0e389a9a0" target="_blank">부케 사진 전체 보기 (노션)</a>
+      </div>
+    </div>
+
+    <div class="subpage" id="sub-parking">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">주차 안내</div>
+      <div class="card">
+        <div class="row"><span>기본 요금</span><span>2시간 무료 / 이후 30분당 2,000원</span></div>
+        <div class="row"><span>무료 주차</span><span>신랑신부 1대 + 양가 부모님 각 1대 (총 3대)</span></div>
+        <div class="row"><span>주차 위치</span><span>웨딩홀 지하 4층~지상 1층</span></div>
+        <div class="row"><span>만차 시</span><span>이대서울병원 주차장 (안내데스크 등록 필수)</span></div>
+        <div class="row"><span>지하철</span><span>5호선 발산역 7번 출구, 도보 3분</span></div>
+        <p class="muted">주소: 서울시 강서구 공항대로 36길 57 · TEL. 1661-3303</p>
+      </div>
+    </div>
+
+    <div class="subpage" id="sub-checklist">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">예식 준비 체크리스트</div>
+      <p class="section-sub">항목을 입력해서 진행상황을 정리하고, 완성되면 복사 버튼으로 텍스트를 그대로 가져갈 수 있어요.</p>
+      <button class="btn btn-primary btn-block" onclick="openChecklistEntry()" style="margin-bottom:16px;">내 체크리스트 작성 · 수정</button>
+      <div id="checklistList"><div class="loading">불러오는 중...</div></div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ---------------- Hall Detail (read-only) ---------------- -->
+<div class="overlay" id="hallDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hallDetailTitle">
+    <h2 id="hallDetailTitle">일정 상세</h2>
+    <div class="field"><label>코드(닉네임)</label><p id="hd_code" style="font-size:15px; font-weight:600;"></p></div>
+    <div class="field"><label>홀</label><p id="hd_hall" style="font-size:15px;"></p></div>
+    <div class="field"><label>예식 날짜 · 시간</label><p id="hd_datetime" style="font-size:15px;"></p></div>
+    <div class="field"><label>메모</label><p id="hd_memo" style="font-size:14px; color:var(--ink-soft);"></p></div>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="requestEditHall()">수정</button>
+      <button type="button" class="btn btn-danger" onclick="requestDeleteHall()">삭제</button>
+      <button type="button" class="btn btn-primary" onclick="closeHallDetail()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- Add/Edit Hall Modal ---------------- -->
+<div class="overlay" id="hallOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="hallModalTitle">
+    <h2 id="hallModalTitle">일정 등록</h2>
+    <form id="hallForm">
+      <div class="field">
+        <label for="h_code">코드(닉네임) <span class="req">*</span></label>
+        <input type="text" id="h_code" maxlength="40" placeholder="예: 2610도화" required>
+      </div>
+      <div class="field">
+        <label for="h_hall">홀 <span class="req">*</span></label>
+        <select id="h_hall" required>
+          <option value="" disabled selected>선택해주세요</option>
+          <option value="제니스홀">제니스홀</option>
+          <option value="더뉴홀">더뉴홀</option>
+          <option value="르노브홀">르노브홀</option>
+        </select>
+      </div>
+      <div class="datetime-fields">
+        <div class="field">
+          <label for="h_date">예식 날짜 <span class="req">*</span></label>
+          <input type="date" id="h_date" required>
+        </div>
+        <div class="field">
+          <label for="h_time">예식 시간 <span class="req">*</span></label>
+          <input type="time" id="h_time" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="h_memo">메모</label>
+        <textarea id="h_memo" rows="2" maxlength="300" placeholder="선택 입력"></textarea>
+      </div>
+      <div class="field" id="h_pw_field">
+        <label for="h_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="h_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" onclick="closeHallModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------------- Code Detail (read-only) ---------------- -->
+<div class="overlay" id="codeDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeDetailTitle">
+    <h2 id="codeDetailTitle">짝꿍코드 상세</h2>
+    <div class="field"><label>업체명</label><p id="cd_vendor" style="font-size:15px; font-weight:600;"></p></div>
+    <div class="field"><label>카테고리</label><p id="cd_category" style="font-size:15px;"></p></div>
+    <div class="field"><label>공유자 (오픈카톡아이디)</label><p id="cd_sharer" style="font-size:15px;"></p></div>
+    <div class="field"><label>짝꿍코드</label><p id="cd_code" style="font-size:15px;"></p></div>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="requestEditCode()">수정</button>
+      <button type="button" class="btn btn-danger" onclick="requestDeleteCode()">삭제</button>
+      <button type="button" class="btn btn-primary" onclick="closeCodeDetail()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- Add/Edit Code Modal ---------------- -->
+<div class="overlay" id="codeOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeModalTitle">
+    <h2 id="codeModalTitle">짝꿍코드 등록</h2>
+    <form id="codeForm">
+      <div class="field">
+        <label for="c_vendor">업체명 <span class="req">*</span></label>
+        <input type="text" id="c_vendor" maxlength="100" placeholder="예: 르랑필름" required>
+      </div>
+      <div class="field">
+        <label for="c_category">카테고리 <span class="req">*</span></label>
+        <select id="c_category" required>
+          <option value="" disabled selected>선택해주세요</option>
+          <option value="스냅">스냅</option>
+          <option value="DVD">DVD</option>
+          <option value="축의대">축의대</option>
+          <option value="한복">한복</option>
+          <option value="예물">예물</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="c_sharer">공유자 (오픈카톡아이디) <span class="req">*</span></label>
+        <input type="text" id="c_sharer" maxlength="80" placeholder="예: 2610도화" required>
+      </div>
+      <div class="field">
+        <label for="c_code">짝꿍코드 <span class="req">*</span></label>
+        <input type="text" id="c_code" maxlength="120" placeholder="예: 261017도화" required>
+      </div>
+      <div class="field" id="c_pw_field">
+        <label for="c_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="c_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" onclick="closeCodeModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------------- Password prompt (generic) ---------------- -->
+<div class="overlay" id="pwOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+    <h2 id="pwTitle">비밀번호 확인</h2>
+    <p style="font-size:13px; color:var(--ink-soft); margin:-8px 0 16px;">등록하실 때 입력했던 비밀번호를 넣어주세요.</p>
+    <div class="field">
+      <label for="pwInput">비밀번호</label>
+      <input type="password" id="pwInput" maxlength="128" placeholder="비밀번호">
+    </div>
+    <p id="pwError" style="color:var(--error); font-size:12.5px; display:none;">비밀번호가 맞지 않아요. 다시 확인해주세요.</p>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="cancelPwPrompt()">취소</button>
+      <button type="button" class="btn btn-primary" onclick="submitPwPrompt()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- Checklist Detail (read-only, table) ---------------- -->
+<div class="overlay" id="checklistDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checklistDetailTitle">
+    <h2 id="checklistDetailTitle">체크리스트 상세</h2>
+    <div style="display:flex; align-items:center; gap:8px; margin:-6px 0 14px;">
+      <b id="ckd_owner" style="font-size:15px;"></b>
+      <span id="ckd_badge"></span>
+    </div>
+    <div class="table-wrap" style="max-height:46vh; overflow-y:auto;">
+      <table class="data" id="checklistDetailTable" style="margin:0;"></table>
+    </div>
+    <button type="button" class="btn btn-outline btn-block" onclick="copyChecklist()" style="margin-top:14px;">📋 텍스트로 복사</button>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="requestEditChecklist()">수정</button>
+      <button type="button" class="btn btn-danger" onclick="requestDeleteChecklist()">삭제</button>
+      <button type="button" class="btn btn-primary" onclick="closeChecklistDetail()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- Checklist Add/Edit Modal ---------------- -->
+<div class="overlay" id="checklistFormOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checklistFormTitle">
+    <h2 id="checklistFormTitle">체크리스트 작성</h2>
+    <form id="checklistForm">
+      <div class="field">
+        <label for="ck_ownerId">아이디(코드/닉네임) <span class="req">*</span></label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="ck_ownerId" maxlength="40" placeholder="예: 2610도화" required style="flex:1;">
+          <button type="button" class="btn btn-outline" onclick="loadMyChecklist()" style="flex:0 0 auto; padding:0 16px;">불러오기</button>
+        </div>
+        <p class="muted" style="margin:6px 0 0; font-size:11.5px;">이미 작성한 아이디면 불러오기로 수정, 처음이면 그대로 새로 작성하세요.</p>
+      </div>
+
+      <label class="past-toggle" style="margin:14px 0 16px; width:100%; align-items:flex-start;">
+        <input type="checkbox" id="ck_public" style="margin-top:1px;">
+        <span>공개로 전환 (켜면 누구나 볼 수 있어요 · 끄면 비밀번호를 아는 사람만 볼 수 있어요)</span>
+      </label>
+
+      <div style="max-height:42vh; overflow-y:auto; overflow-x:hidden; margin-bottom:14px; padding-right:2px;">
+        <div id="checklistFormTable"></div>
+      </div>
+
+      <div class="field" id="ck_pw_field">
+        <label for="ck_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="ck_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" onclick="closeChecklistFormModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<button class="fab" id="fab" aria-label="현재 목록에 항목 추가" onclick="openAddModal()">+</button>
+
+<nav class="bottom">
+  <button class="nav-btn active" data-page="home" aria-current="page" onclick="go('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+    <span class="lb">홈</span>
+  </button>
+  <button class="nav-btn" data-page="halls" onclick="go('halls')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+    <span class="lb">홀일정</span>
+  </button>
+  <button class="nav-btn" data-page="codes" onclick="go('codes')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M17 4h3v3M14 7l2 2"/></svg>
+    <span class="lb">짝꿍코드</span>
+  </button>
+  <button class="nav-btn" data-page="partners" onclick="go('partners')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span class="lb">제휴업체</span>
+  </button>
+  <button class="nav-btn" data-page="more" onclick="go('more')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
+    <span class="lb">정보</span>
+  </button>
+</nav>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

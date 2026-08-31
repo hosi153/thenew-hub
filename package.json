@@ -1,0 +1,16 @@
+{
+  "name": "thenew-hub",
+  "private": true,
+  "version": "0.1.0",
+  "description": "더뉴컨벤션 예신예랑 정보허브 — 정적 웹앱",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/static-review.test.mjs"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}
