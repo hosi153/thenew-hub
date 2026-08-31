@@ -1229,6 +1229,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+// Some ad blockers, VPNs, and Private Relay silently drop Firestore's default
+// streaming connection (causing requests to hang forever instead of failing fast).
+// Auto-detecting and falling back to long-polling works around this reliably.
+db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
 init();
 setTimeout(()=>{
   const retryHtml = `<div class="empty">불러오는 데 시간이 오래 걸리고 있어요.<br><button type="button" class="btn btn-outline" style="margin-top:10px;" onclick="location.reload()">다시 시도</button></div>`;
