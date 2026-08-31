@@ -1234,6 +1234,22 @@ const db = firebase.firestore();
 // Auto-detecting and falling back to long-polling works around this reliably.
 db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
 init();
+
+/* Safety net: iOS Safari sometimes restores the page (from bfcache, app-switcher
+   suspend/resume, etc.) without properly re-painting list content, leaving stale
+   "불러오는 중..." placeholders even though data is already loaded in memory.
+   Re-render (cheap, no network call) whenever the page becomes visible again. */
+function forceRerenderIfReady(){
+  if(halls && halls.length){
+    try{
+      renderHallChips(); renderCodeChips();
+      renderHalls(); renderCodes(); renderChecklistList();
+    }catch(e){ console.error('forceRerenderIfReady failed:', e); }
+  }
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') forceRerenderIfReady(); });
+window.addEventListener('pageshow', forceRerenderIfReady);
+window.addEventListener('focus', forceRerenderIfReady);
 setTimeout(()=>{
   const retryHtml = `<div class="empty">불러오는 데 시간이 오래 걸리고 있어요.<br><button type="button" class="btn btn-outline" style="margin-top:10px;" onclick="location.reload()">다시 시도</button></div>`;
   ['hallList','codeList','checklistList'].forEach(id=>{
