@@ -222,7 +222,7 @@
     -webkit-backdrop-filter:blur(30px) saturate(180%);
     backdrop-filter:blur(30px) saturate(180%);
     border:1px solid var(--border-strong);
-    width:100%; max-width:560px; border-radius:24px;
+    width:100%; min-width:0; max-width:min(560px, 100%); border-radius:24px;
     padding:14px 20px 24px; max-height:min(85vh, 720px); overflow-y:auto; overflow-x:hidden;
     animation:modalpop .22s cubic-bezier(.4,0,.2,1);
     box-shadow:0 20px 60px -12px rgba(var(--ink-rgb),0.45);
@@ -234,6 +234,7 @@
   }
   @keyframes modalpop{ from{ transform:scale(.96) translateY(8px); opacity:0;} to{ transform:none; opacity:1;} }
   .modal h2{ font-family:'Noto Sans KR', sans-serif; font-weight:800; font-size:17px; margin:0 0 16px; }
+  .modal form, .field{ min-width:0; max-width:100%; }
   .field{ margin-bottom:14px; }
   .field label{ display:block; font-size:12.5px; font-weight:700; margin-bottom:7px; color:var(--ink-soft); }
   .field label .req{ color:var(--accent); }
@@ -242,7 +243,12 @@
     font-size:16px; font-family:inherit; background:var(--surface-input); color:var(--ink); box-sizing:border-box;
   }
   .field input[type="date"], .field input[type="time"], .field input[type="datetime-local"]{
-    min-height:46px; width:100%; max-width:100%; display:block;
+    min-height:46px; min-width:0; width:100%; max-width:100%;
+    inline-size:100%; min-inline-size:0; max-inline-size:100%;
+    -webkit-min-logical-width:0; display:block;
+  }
+  .field input[type="datetime-local"]::-webkit-date-and-time-value{
+    min-width:0; text-align:left;
   }
   .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--accent); }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -335,13 +341,16 @@
   }
   .cal-nav .cal-title{ font-weight:800; font-size:15px; }
   .cal-grid{
-    display:grid; grid-template-columns:repeat(7,1fr); gap:5px;
+    display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px;
+    width:100%; min-width:0; max-width:100%; overflow:hidden;
     background:var(--surface-strong); border:1px solid var(--border-strong); border-radius:var(--radius-md);
     padding:10px; box-shadow:0 8px 24px -18px rgba(var(--ink-rgb),0.3);
   }
-  .cal-dow{ text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); padding:4px 0 8px; }
+  #hallCalendarView{ width:100%; min-width:0; max-width:100%; }
+  .cal-dow{ min-width:0; overflow:hidden; text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); padding:4px 0 8px; }
   .cal-cell{
-    position:relative; aspect-ratio:1/1; border-radius:10px; display:flex; flex-direction:column;
+    position:relative; min-width:0; width:100%; max-width:100%; overflow:hidden;
+    aspect-ratio:1/1; border-radius:10px; display:flex; flex-direction:column;
     align-items:center; justify-content:flex-start; padding-top:6px; cursor:pointer; font-size:12px;
     color:var(--ink); background:transparent; border:1.5px solid transparent; transition:all .15s ease;
   }
