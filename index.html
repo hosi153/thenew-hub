@@ -289,6 +289,14 @@
   table.list-table tr.rowitem{ cursor:pointer; transition:background .15s ease; }
   table.list-table tr.rowitem:active{ background:var(--accent-tint); }
   table.list-table td.memo-cell{ color:var(--ink-soft); font-size:11.5px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* Hall schedule list: only 3 compact columns, so it should never need to
+     horizontally scroll — let content wrap instead of forcing nowrap. */
+  .hall-table-wrap{ overflow-x:hidden; }
+  table.hall-list-table{ table-layout:fixed; white-space:normal; }
+  table.hall-list-table th:nth-child(1), table.hall-list-table td:nth-child(1){ width:34%; word-break:break-word; }
+  table.hall-list-table th:nth-child(2), table.hall-list-table td:nth-child(2){ width:32%; }
+  table.hall-list-table th:nth-child(3), table.hall-list-table td:nth-child(3){ width:34%; }
   .hall-badge{
     display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:var(--radius-pill);
     background:var(--accent-tint); color:var(--accent-deep); white-space:nowrap;
@@ -1965,7 +1973,6 @@ function renderHalls(){
       <td><b>${escapeHtml(h.code)}</b></td>
       <td>${hallTag(h.hall)}</td>
       <td>${dateLabel}</td>
-      <td class="memo-cell">${escapeHtml(h.memo||'')}</td>
     </tr>`;
   }).join('');
 
@@ -1973,8 +1980,8 @@ function renderHalls(){
     ? `<div class="loading" id="hallLoadMoreSentinel">${hallPage.loading ? '더 불러오는 중...' : ''}</div>`
     : '';
 
-  el.innerHTML = `<div class="table-wrap"><table class="list-table">
-    <thead><tr><th>코드</th><th>홀</th><th>일정</th><th>메모</th></tr></thead>
+  el.innerHTML = `<div class="table-wrap hall-table-wrap"><table class="list-table hall-list-table">
+    <thead><tr><th>코드</th><th>홀</th><th>일정</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>${footer}`;
 
