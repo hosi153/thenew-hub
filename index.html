@@ -360,6 +360,24 @@
   .week-row .wd{ font-weight:800; font-size:13px; min-width:74px; color:var(--accent-deep); }
   .week-row .wc{ font-weight:700; font-size:13px; flex:1; }
 
+  /* ---------- Checklist form table ---------- */
+  #checklistFormTable .ck-section-row td{
+    font-weight:800; font-size:12.5px; padding:12px 6px 6px; border-top:none; color:var(--accent-deep);
+  }
+  #checklistFormTable .ck-label-cell{ width:38%; font-size:12.5px; color:var(--ink-soft); vertical-align:middle; }
+  #checklistFormTable .ck-input-cell{ padding:5px 4px; }
+  #checklistFormTable .ck-input-row{ display:flex; gap:6px; align-items:center; }
+  #checklistFormTable .ck-input-row input{
+    flex:1; min-width:0; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:var(--surface-input); color:var(--ink); font-size:12.5px; font-family:inherit;
+  }
+  #checklistFormTable .ck-skip-btn{
+    flex-shrink:0; padding:8px 9px; border-radius:var(--radius-sm); border:1px solid var(--border);
+    background:var(--surface-input); color:var(--ink-soft); font-size:11px; font-weight:700; cursor:pointer;
+  }
+  #checklistFormTable .ck-skip-btn.on{ background:var(--neutral-tint); color:var(--ink); border-color:var(--border-strong); }
+  #checklistDetailTable td:first-child{ color:var(--ink-soft); white-space:nowrap; }
+
   /* ---------- Bottom nav: floating glass capsule, scroll-reactive ---------- */
   nav.bottom{
     position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom)); z-index:60;
@@ -870,6 +888,7 @@
         <div class="info-link" onclick="openSub('terms')"><span class="l"><span class="dot"></span>용어 설명</span><span class="arrow">›</span></div>
         <div class="info-link" onclick="openSub('bouquet')"><span class="l"><span class="dot"></span>부케 안내</span><span class="arrow">›</span></div>
         <div class="info-link" onclick="openSub('parking')"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
+        <div class="info-link" onclick="openSub('checklist')"><span class="l"><span class="dot"></span>예식 준비 체크리스트</span><span class="arrow">›</span></div>
         <a class="info-link" href="https://docs.google.com/spreadsheets/d/1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/edit?usp=sharing" target="_blank"><span class="l"><span class="dot"></span>예식 양식 모음</span><span class="arrow">↗</span></a>
         <a class="info-link" href="https://drive.google.com/drive/folders/1sFr7egHVGCvKwgTpKY7B2ZO310Ecx5-D?usp=drive_link" target="_blank"><span class="l"><span class="dot"></span>예식 음원 모음</span><span class="arrow">↗</span></a>
       </div>
@@ -946,6 +965,14 @@
         <div class="row"><span>지하철</span><span>5호선 발산역 7번 출구, 도보 3분</span></div>
         <p class="muted">주소: 서울시 강서구 공항대로 36길 57 · TEL. 1661-3303</p>
       </div>
+    </div>
+
+    <div class="subpage" id="sub-checklist">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">예식 준비 체크리스트</div>
+      <p class="section-sub">항목을 입력해서 진행상황을 정리하고, 완성되면 복사 버튼으로 텍스트를 그대로 가져갈 수 있어요.</p>
+      <button class="btn btn-primary btn-block" onclick="openChecklistEntry()" style="margin-bottom:16px;">내 체크리스트 작성 · 수정</button>
+      <div id="checklistList"><div class="loading">불러오는 중...</div></div>
     </div>
 
   </section>
@@ -1079,6 +1106,61 @@
       <button type="button" class="btn btn-outline" onclick="cancelPwPrompt()">취소</button>
       <button type="button" class="btn btn-primary" onclick="submitPwPrompt()">확인</button>
     </div>
+  </div>
+</div>
+
+<!-- ---------------- Checklist Detail (read-only, table) ---------------- -->
+<div class="overlay" id="checklistDetailOverlay">
+  <div class="modal">
+    <h2>체크리스트 상세</h2>
+    <div style="display:flex; align-items:center; gap:8px; margin:-6px 0 14px;">
+      <b id="ckd_owner" style="font-size:15px;"></b>
+      <span id="ckd_badge"></span>
+    </div>
+    <div class="table-wrap" style="max-height:46vh; overflow-y:auto;">
+      <table class="data" id="checklistDetailTable" style="margin:0;"></table>
+    </div>
+    <button type="button" class="btn btn-outline btn-block" onclick="copyChecklist()" style="margin-top:14px;">📋 텍스트로 복사</button>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="requestEditChecklist()">수정</button>
+      <button type="button" class="btn btn-danger" onclick="requestDeleteChecklist()">삭제</button>
+      <button type="button" class="btn btn-primary" onclick="closeChecklistDetail()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- Checklist Add/Edit Modal ---------------- -->
+<div class="overlay" id="checklistFormOverlay">
+  <div class="modal">
+    <h2 id="checklistFormTitle">체크리스트 작성</h2>
+    <form id="checklistForm">
+      <div class="field">
+        <label>아이디(코드/닉네임) <span class="req">*</span></label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="ck_ownerId" placeholder="예: 2610도화" required style="flex:1;">
+          <button type="button" class="btn btn-outline" onclick="loadMyChecklist()" style="flex:0 0 auto; padding:0 16px;">불러오기</button>
+        </div>
+        <p class="muted" style="margin:6px 0 0; font-size:11.5px;">이미 작성한 아이디면 불러오기로 수정, 처음이면 그대로 새로 작성하세요.</p>
+      </div>
+
+      <label class="past-toggle" style="margin:14px 0 16px; width:100%; align-items:flex-start;">
+        <input type="checkbox" id="ck_public" style="margin-top:1px;">
+        <span>공개로 전환 (켜면 누구나 볼 수 있어요 · 끄면 비밀번호를 아는 사람만 볼 수 있어요)</span>
+      </label>
+
+      <div class="table-wrap" style="max-height:42vh; overflow-y:auto; margin-bottom:14px;">
+        <table class="data" id="checklistFormTable" style="margin:0;"></table>
+      </div>
+
+      <div class="field" id="ck_pw_field">
+        <label>비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="ck_password" placeholder="숫자/영문 아무거나" required>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" onclick="closeChecklistFormModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1294,6 +1376,53 @@ const SEED_CODES = [
 /* ============ STATE ============ */
 let halls = [];
 let codes = [];
+let checklists = [];
+let viewingChecklistId = null;
+let editingChecklistId = null;
+
+/* ============ WEDDING PREP CHECKLIST TEMPLATE ============ */
+const CHECKLIST_TEMPLATE = [
+  { section:'🏛️ 예식장 기본', items:[
+    { key:'hall', label:'웨딩홀', emoji:'🏛️', def:'발산 더뉴컨벤션' },
+    { key:'planner', label:'플래너', emoji:'👩\u200d💼' },
+    { key:'band', label:'웨딩밴드', emoji:'💍' },
+  ]},
+  { section:'📸 웨딩촬영 (스튜디오)', items:[
+    { key:'shootDress', label:'촬영 드레스', emoji:'👰🏻\u200d♀️', def:'안함' },
+    { key:'shootMakeup', label:'촬영헤어메이크업', emoji:'💄', def:'안함' },
+    { key:'shootSuit', label:'촬영 정장', emoji:'🤵🏻', def:'안함' },
+    { key:'shootBouquet', label:'촬영부케', emoji:'💐', def:'안함' },
+    { key:'shootHairChange', label:'헤어변형', emoji:'' },
+  ]},
+  { section:'💒 본식 (예식 당일)', items:[
+    { key:'dress', label:'드레스', emoji:'👰🏻\u200d♀️' },
+    { key:'makeup', label:'헤어메이크업', emoji:'💄' },
+    { key:'suit', label:'예복', emoji:'🤵🏻' },
+    { key:'bouquet', label:'본식 부케', emoji:'💐', def:'홀 연계' },
+    { key:'mc', label:'사회자', emoji:'🎤', def:'홀 연계' },
+    { key:'snap', label:'본식 스냅', emoji:'📷' },
+    { key:'dvd', label:'본식 DVD(영상)', emoji:'🎥' },
+    { key:'iphoneSnap', label:'아이폰스냅', emoji:'📱' },
+    { key:'preVideo', label:'식전 영상', emoji:'🎞️' },
+  ]},
+  { section:'👗 본식 2부', items:[
+    { key:'part2Outfit', label:'2부 의상(드레스/한복/별도)', emoji:'👗' },
+    { key:'part2Hair', label:'2부 헤어변형', emoji:'💄' },
+  ]},
+  { section:'💌 청첩장', items:[
+    { key:'invite', label:'청첩장', emoji:'❤️' },
+    { key:'mobileInvite', label:'모바일 청첩장', emoji:'📧' },
+  ]},
+  { section:'👨\u200d👩\u200d👧 혼주', items:[
+    { key:'parentMakeup', label:'혼주메이크업', emoji:'💄', def:'더뉴컨벤션 뷰티샵' },
+    { key:'parentHanbok', label:'혼주한복', emoji:'👘' },
+    { key:'parentSuit', label:'혼주정장', emoji:'👔' },
+  ]},
+  { section:'✈️ 신혼여행', items:[
+    { key:'honeymoon', label:'신혼여행', emoji:'✈️' },
+  ]},
+];
+function ckFlatItems(){ return CHECKLIST_TEMPLATE.flatMap(s=>s.items); }
 let hallFilter = '전체';
 let codeFilter = '전체';
 let editingHallId = null;
@@ -1414,12 +1543,18 @@ async function init(){
     }
   }catch(e){ codes = SEED_CODES; }
 
+  try{
+    const snap = await db.collection('prepChecklist').get();
+    checklists = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }catch(e){ checklists = []; }
+
   await applyPatches();
 
   renderHallChips();
   renderCodeChips();
   renderHalls();
   renderCodes();
+  renderChecklistList();
 }
 init();
 
@@ -1857,6 +1992,223 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
   toast('저장되었습니다');
 });
 
+/* ============ WEDDING PREP CHECKLIST ============ */
+async function saveChecklists(){
+  try{
+    const snap = await db.collection('prepChecklist').get();
+    const remoteIds = snap.docs.map(d=>d.id);
+    const localIds = checklists.map(c=>c.id);
+    const batch = db.batch();
+    checklists.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('prepChecklist').doc(id), data); });
+    remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('prepChecklist').doc(id)) );
+    await batch.commit();
+  }catch(e){ toast('저장 중 문제가 발생했어요'); }
+}
+
+/* ---- build the input table once (static template) ---- */
+function buildChecklistFormTable(){
+  const el = document.getElementById('checklistFormTable');
+  let rows = '';
+  CHECKLIST_TEMPLATE.forEach(sec=>{
+    rows += `<tr class="ck-section-row"><td colspan="2">${sec.section}</td></tr>`;
+    sec.items.forEach(it=>{
+      rows += `<tr>
+        <td class="ck-label-cell">${it.emoji?it.emoji+' ':''}${escapeHtml(it.label)}</td>
+        <td class="ck-input-cell">
+          <div class="ck-input-row">
+            <input type="text" id="ck_item_${it.key}" placeholder="입력...">
+            <button type="button" class="ck-skip-btn" id="ck_skip_${it.key}" onclick="ckToggleSkip('${it.key}')">안함</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+  });
+  el.innerHTML = rows;
+}
+buildChecklistFormTable();
+
+function ckToggleSkip(key){
+  const input = document.getElementById('ck_item_'+key);
+  const btn = document.getElementById('ck_skip_'+key);
+  if(input.value.trim()==='안함'){ input.value=''; btn.classList.remove('on'); }
+  else{ input.value='안함'; btn.classList.add('on'); }
+}
+
+function ckResetForm(){
+  ckFlatItems().forEach(it=>{
+    const input = document.getElementById('ck_item_'+it.key);
+    input.value = it.def || '';
+    document.getElementById('ck_skip_'+it.key).classList.toggle('on', input.value==='안함');
+  });
+}
+
+function showCkPwField(show){
+  document.getElementById('ck_pw_field').style.display = show ? 'block' : 'none';
+  document.getElementById('ck_password').required = show;
+}
+
+function openChecklistEntry(){
+  editingChecklistId = null;
+  document.getElementById('checklistFormTitle').textContent = '체크리스트 작성';
+  document.getElementById('checklistForm').reset();
+  document.getElementById('ck_ownerId').removeAttribute('readonly');
+  document.getElementById('ck_public').checked = false;
+  ckResetForm();
+  showCkPwField(true);
+  document.getElementById('checklistFormOverlay').classList.add('show');
+}
+function closeChecklistFormModal(){ document.getElementById('checklistFormOverlay').classList.remove('show'); }
+
+async function loadMyChecklist(){
+  const oid = document.getElementById('ck_ownerId').value.trim();
+  if(!oid){ toast('아이디를 입력해주세요'); return; }
+  const existing = checklists.find(c=>c.ownerId===oid);
+  if(!existing){ toast('아직 없는 아이디예요. 새로 작성해주세요'); editingChecklistId=null; showCkPwField(true); return; }
+  const ok = await verify(existing);
+  if(!ok) return;
+  editingChecklistId = existing.id;
+  document.getElementById('checklistFormTitle').textContent = '체크리스트 수정';
+  ckFlatItems().forEach(it=>{
+    const input = document.getElementById('ck_item_'+it.key);
+    const v = (existing.items && existing.items[it.key]) || '';
+    input.value = v;
+    document.getElementById('ck_skip_'+it.key).classList.toggle('on', v==='안함');
+  });
+  document.getElementById('ck_public').checked = !!existing.isPublic;
+  showCkPwField(false);
+  toast('불러왔습니다. 수정 후 저장하세요');
+}
+
+document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const ownerId = document.getElementById('ck_ownerId').value.trim();
+  if(!ownerId){ toast('아이디를 입력해주세요'); return; }
+  if(!editingChecklistId && checklists.some(c=>c.ownerId===ownerId)){
+    toast('이미 사용 중인 아이디예요. 불러오기로 수정해주세요');
+    return;
+  }
+  const items = {};
+  ckFlatItems().forEach(it=>{ items[it.key] = document.getElementById('ck_item_'+it.key).value.trim(); });
+  const isPublic = document.getElementById('ck_public').checked;
+
+  if(editingChecklistId){
+    const idx = checklists.findIndex(x=>x.id===editingChecklistId);
+    checklists[idx] = {...checklists[idx], ownerId, items, isPublic};
+  }else{
+    const pw = document.getElementById('ck_password').value;
+    const pwHash = await hashPw(pw);
+    checklists.push({id:'ck_'+Date.now(), ownerId, items, isPublic, pwHash});
+  }
+  await saveChecklists();
+  closeChecklistFormModal();
+  renderChecklistList();
+  toast('저장되었습니다');
+});
+
+function renderChecklistList(){
+  const el = document.getElementById('checklistList');
+  if(!el) return;
+  if(!checklists || checklists.length===0){
+    el.innerHTML = `<div class="empty">아직 작성된 체크리스트가 없어요. 첫 번째로 작성해보세요!</div>`;
+    return;
+  }
+  const rows = checklists.map(c=>{
+    const badge = c.isPublic
+      ? `<span class="hall-tag" style="background:var(--accent-tint); color:var(--accent-deep);"><i class="hall-tag-dot" style="background:var(--accent-deep)"></i>공개</span>`
+      : `<span class="hall-tag" style="background:var(--neutral-tint); color:var(--ink-soft);"><i class="hall-tag-dot" style="background:var(--ink-faint)"></i>비공개</span>`;
+    return `<tr class="rowitem" onclick="openChecklistDetail('${c.id}')"><td><b>${escapeHtml(c.ownerId)}</b></td><td>${badge}</td></tr>`;
+  }).join('');
+  el.innerHTML = `<div class="table-wrap"><table class="list-table">
+    <thead><tr><th>아이디</th><th>공개여부</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+async function openChecklistDetail(id){
+  const item = checklists.find(x=>x.id===id);
+  if(!item) return;
+  if(!item.isPublic){
+    const ok = await verify(item);
+    if(!ok) return;
+  }
+  renderChecklistDetail(item);
+}
+
+function renderChecklistDetail(item){
+  viewingChecklistId = item.id;
+  document.getElementById('ckd_owner').textContent = item.ownerId;
+  document.getElementById('ckd_badge').innerHTML = item.isPublic
+    ? `<span class="hall-tag" style="background:var(--accent-tint); color:var(--accent-deep);">공개</span>`
+    : `<span class="hall-tag" style="background:var(--neutral-tint); color:var(--ink-soft);">비공개</span>`;
+  let rows = '';
+  CHECKLIST_TEMPLATE.forEach(sec=>{
+    rows += `<tr><td colspan="2" style="font-weight:800; color:var(--accent-deep); padding-top:14px; border-top:none;">${sec.section}</td></tr>`;
+    sec.items.forEach(it=>{
+      const v = (item.items && item.items[it.key]) || '-';
+      rows += `<tr><td>${it.emoji?it.emoji+' ':''}${escapeHtml(it.label)}</td><td>${escapeHtml(v)}</td></tr>`;
+    });
+  });
+  document.getElementById('checklistDetailTable').innerHTML = rows;
+  document.getElementById('checklistDetailOverlay').classList.add('show');
+}
+function closeChecklistDetail(){ document.getElementById('checklistDetailOverlay').classList.remove('show'); }
+
+function checklistText(item){
+  const lines = [];
+  ckFlatItems().forEach(it=>{
+    const v = (item.items && item.items[it.key]) || '';
+    lines.push(`${it.emoji?it.emoji+' ':''}${it.label} : ${v}`);
+  });
+  return lines.join('\n');
+}
+
+async function copyChecklist(){
+  const item = checklists.find(x=>x.id===viewingChecklistId);
+  if(!item) return;
+  const text = checklistText(item);
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e2){}
+    document.body.removeChild(ta);
+  }
+  toast('복사되었습니다');
+}
+
+async function requestEditChecklist(){
+  const item = checklists.find(x=>x.id===viewingChecklistId);
+  const ok = await verify(item);
+  if(!ok) return;
+  closeChecklistDetail();
+  editingChecklistId = item.id;
+  document.getElementById('checklistFormTitle').textContent = '체크리스트 수정';
+  document.getElementById('ck_ownerId').value = item.ownerId;
+  ckFlatItems().forEach(it=>{
+    const input = document.getElementById('ck_item_'+it.key);
+    const v = (item.items && item.items[it.key]) || '';
+    input.value = v;
+    document.getElementById('ck_skip_'+it.key).classList.toggle('on', v==='안함');
+  });
+  document.getElementById('ck_public').checked = !!item.isPublic;
+  showCkPwField(false);
+  document.getElementById('checklistFormOverlay').classList.add('show');
+}
+
+async function requestDeleteChecklist(){
+  const item = checklists.find(x=>x.id===viewingChecklistId);
+  const ok = await verify(item);
+  if(!ok) return;
+  if(!confirm('정말 삭제하시겠어요?')) return;
+  checklists = checklists.filter(x=>x.id!==viewingChecklistId);
+  await saveChecklists();
+  closeChecklistDetail();
+  renderChecklistList();
+  toast('삭제되었습니다');
+}
+
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str || '';
@@ -1872,6 +2224,8 @@ document.querySelectorAll('.overlay').forEach(ov=>{
     else if(ov.id==='hallDetailOverlay') closeHallDetail();
     else if(ov.id==='codeDetailOverlay') closeCodeDetail();
     else if(ov.id==='pwOverlay') cancelPwPrompt();
+    else if(ov.id==='checklistDetailOverlay') closeChecklistDetail();
+    else if(ov.id==='checklistFormOverlay') closeChecklistFormModal();
   });
 });
 
