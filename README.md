@@ -36,3 +36,5 @@ node --test tests/static-review.test.mjs
 ## 구조상 주의사항
 
 현재 앱은 단일 HTML 파일 구조를 유지합니다. 기능을 더 확장할 경우 CSS와 JavaScript를 별도 파일로 분리하고 Firebase Emulator 기반 통합 테스트를 추가하는 것이 좋습니다.
+
+단일 파일을 Vite 기반 기능 모듈로 전환하고 저장·조회·렌더링 성능을 개선하는 단계별 작업은 [성능 개선 리팩터링 계획](docs/PERFORMANCE_REFACTORING_PLAN.md)을 참고하세요.
