@@ -223,7 +223,7 @@
     backdrop-filter:blur(30px) saturate(180%);
     border:1px solid var(--border-strong);
     width:100%; max-width:560px; border-radius:24px;
-    padding:14px 20px 24px; max-height:min(85vh, 720px); overflow-y:auto;
+    padding:14px 20px 24px; max-height:min(85vh, 720px); overflow-y:auto; overflow-x:hidden;
     animation:modalpop .22s cubic-bezier(.4,0,.2,1);
     box-shadow:0 20px 60px -12px rgba(var(--ink-rgb),0.45);
     margin:auto;
@@ -238,10 +238,12 @@
   .field label{ display:block; font-size:12.5px; font-weight:700; margin-bottom:7px; color:var(--ink-soft); }
   .field label .req{ color:var(--accent); }
   .field input, .field select, .field textarea{
-    width:100%; padding:12px 13px; border-radius:var(--radius-md); border:1px solid var(--border);
-    font-size:16px; font-family:inherit; background:var(--surface-input); color:var(--ink);
+    width:100%; max-width:100%; padding:12px 13px; border-radius:var(--radius-md); border:1px solid var(--border);
+    font-size:16px; font-family:inherit; background:var(--surface-input); color:var(--ink); box-sizing:border-box;
   }
-  .field input[type="date"], .field input[type="time"]{ min-height:46px; box-sizing:border-box; }
+  .field input[type="date"], .field input[type="time"]{
+    min-height:46px; width:100%; max-width:100%; display:block;
+  }
   .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--accent); }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .modal .actions{ display:flex; gap:10px; margin-top:18px; }
@@ -326,8 +328,7 @@
   .cal-nav .cal-title{ font-weight:800; font-size:15px; }
   .cal-grid{
     display:grid; grid-template-columns:repeat(7,1fr); gap:5px;
-    background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-md);
-    -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    background:var(--surface-strong); border:1px solid var(--border-strong); border-radius:var(--radius-md);
     padding:10px; box-shadow:0 8px 24px -18px rgba(var(--ink-rgb),0.3);
   }
   .cal-dow{ text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); padding:4px 0 8px; }
