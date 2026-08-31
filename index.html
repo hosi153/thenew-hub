@@ -1771,6 +1771,16 @@ function go(page){
   document.getElementById('fab').style.display = (page==='halls'||page==='codes') ? 'flex' : 'none';
   window.scrollTo(0,0);
   if(history.replaceState) history.replaceState(null, '', '#'+page);
+
+  // iOS Safari sometimes fails to paint list content that was set via innerHTML
+  // while its container was hidden (display:none). Re-rendering at the exact
+  // moment the tab becomes visible (like the calendar view already does)
+  // guarantees a fresh paint instead of relying on a stale one.
+  if(halls && halls.length){
+    if(page==='home') renderHomeWeek();
+    else if(page==='halls') (hallView==='calendar' ? renderCalendar() : renderHalls());
+    else if(page==='codes') renderCodes();
+  }
 }
 document.getElementById('fab').style.display='none';
 
