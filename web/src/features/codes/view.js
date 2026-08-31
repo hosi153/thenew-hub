@@ -19,7 +19,6 @@ import {
 } from './state.js';
 
 const PAGE_SIZE = 20;
-let lastCodeListHtml = null;
 
 function escapeHtml(value){
   const div = document.createElement('div');
@@ -150,11 +149,7 @@ export function renderCodes(){
   const html = `<div class="table-wrap"><table class="list-table">
     <thead><tr><th>업체명</th><th>카테고리</th><th>공유자</th><th>짝꿍코드</th></tr></thead>
     <tbody>${rows}</tbody></table></div>${footer}`;
-  // Skip the DOM write when the computed markup is unchanged from last time.
-  if(html !== lastCodeListHtml){
-    lastCodeListHtml = html;
-    element.innerHTML = html;
-  }
+  element.innerHTML = html;
 }
 /* Debounced so typing in the search box doesn't rebuild the whole list on
    every keystroke — only once input has paused for a moment. */

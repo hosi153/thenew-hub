@@ -24,7 +24,6 @@ import {
 
 const PAGE_SIZE = 20;
 const HALL_COLORS = { '제니스홀':'#3355FF', '더뉴홀':'#D98F2B', '르노브홀':'#C2447A' };
-let lastHallListHtml = null;
 
 function escapeHtml(value){
   const div = document.createElement('div');
@@ -199,13 +198,7 @@ export function renderHalls(){
   const html = `<div class="table-wrap hall-table-wrap"><table class="list-table hall-list-table">
     <thead><tr><th>코드</th><th>홀</th><th>일정</th></tr></thead><tbody>${rows}</tbody>
   </table></div>${footer}`;
-  // Skip the DOM write entirely when the computed markup hasn't actually
-  // changed (e.g. a re-render triggered by an unrelated state change) —
-  // avoids a full list reflow/repaint for no visible difference.
-  if(html !== lastHallListHtml){
-    lastHallListHtml = html;
-    element.innerHTML = html;
-  }
+  element.innerHTML = html;
   renderHomeWeek();
 }
 /* Debounced so typing in the search box doesn't rebuild the whole list on

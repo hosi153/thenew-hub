@@ -161,17 +161,22 @@ test('stage 5: search inputs are debounced instead of re-rendering on every keys
   assert.match(codesView, /export const handleCodeSearchInput = debounce\(/);
 });
 
-test('stage 5: list renders skip redundant DOM writes when markup is unchanged', () => {
+test('stage 5 (reverted): list renders always write fresh markup to the DOM after save/delete (no stale-cache regression)', () => {
+  // A markup-memoization optimization was tried here and reverted after it
+  // was reported to cause "have to refresh to see my save" on real devices —
+  // most likely interacting badly with the focus/visibilitychange-triggered
+  // re-render in main.js (forceRerenderIfReady) around iOS keyboard dismiss
+  // timing. Correctness matters far more than skipping a redundant innerHTML
+  // write for this list size, so these guards must NOT be reintroduced.
   const scheduleView = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'view.js'), 'utf8');
   const codesView = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'view.js'), 'utf8');
   const checklistView = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
 
-  assert.match(scheduleView, /let lastHallListHtml = null;/);
-  assert.match(scheduleView, /if\(html !== lastHallListHtml\)/);
-  assert.match(codesView, /let lastCodeListHtml = null;/);
-  assert.match(codesView, /if\(html !== lastCodeListHtml\)/);
-  assert.match(checklistView, /let lastChecklistListHtml = null;/);
-  assert.match(checklistView, /if\(html !== lastChecklistListHtml\)/);
+  [scheduleView, codesView, checklistView].forEach((source) => {
+    assert.doesNotMatch(source, /lastHallListHtml|lastCodeListHtml|lastChecklistListHtml/);
+  });
+  assert.match(scheduleView, /element\.innerHTML = html;/);
+  assert.match(codesView, /element\.innerHTML = html;/);
 });
 
 test('stage 5: calendar cache is only invalidated at genuine data-mutation points, not on every render', () => {

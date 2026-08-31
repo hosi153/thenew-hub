@@ -203,13 +203,11 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
   toast('저장되었습니다');
 });
 
-let lastChecklistListHtml = null;
 export function renderChecklistList(){
   const el = document.getElementById('checklistList');
   if(!el) return;
   if(!checklistState.items || checklistState.items.length===0){
-    const empty = `<div class="empty">아직 작성된 체크리스트가 없어요. 첫 번째로 작성해보세요!</div>`;
-    if(empty !== lastChecklistListHtml){ lastChecklistListHtml = empty; el.innerHTML = empty; }
+    el.innerHTML = `<div class="empty">아직 작성된 체크리스트가 없어요. 첫 번째로 작성해보세요!</div>`;
     return;
   }
   const rows = checklistState.items.map(c=>{
@@ -218,14 +216,10 @@ export function renderChecklistList(){
       : `<span class="hall-tag" style="background:var(--neutral-tint); color:var(--ink-soft);"><i class="hall-tag-dot" style="background:var(--ink-faint)"></i>비공개</span>`;
     return `<tr class="rowitem" role="button" tabindex="0" data-action="checklist-detail" data-id="${escapeAttr(c.id)}"><td><b>${escapeHtml(c.ownerId)}</b></td><td>${badge}</td></tr>`;
   }).join('');
-  const html = `<div class="table-wrap"><table class="list-table">
+  el.innerHTML = `<div class="table-wrap"><table class="list-table">
     <thead><tr><th>아이디</th><th>공개여부</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
-  if(html !== lastChecklistListHtml){
-    lastChecklistListHtml = html;
-    el.innerHTML = html;
-  }
 }
 
 export async function openChecklistDetail(id){
