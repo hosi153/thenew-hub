@@ -1232,7 +1232,7 @@ const db = firebase.firestore();
 // Some ad blockers, VPNs, and Private Relay silently drop Firestore's default
 // streaming connection (causing requests to hang forever instead of failing fast).
 // Auto-detecting and falling back to long-polling works around this reliably.
-db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+db.settings({ experimentalForceLongPolling: true, merge: true });
 init();
 setTimeout(()=>{
   const retryHtml = `<div class="empty">불러오는 데 시간이 오래 걸리고 있어요.<br><button type="button" class="btn btn-outline" style="margin-top:10px;" onclick="location.reload()">다시 시도</button></div>`;
@@ -1600,6 +1600,17 @@ async function init(){
   }
 }
 
+/* Lightweight single-document write/delete — used for individual add/edit/delete
+   actions so we don't have to re-fetch and rewrite the whole collection every time. */
+async function saveHallSingle(id, data){
+  try{ await db.collection('hallSchedule').doc(id).set(data); return {ok:true}; }
+  catch(e){ console.error('saveHallSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
+}
+async function deleteHallSingle(id){
+  try{ await db.collection('hallSchedule').doc(id).delete(); return {ok:true}; }
+  catch(e){ console.error('deleteHallSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
+}
+
 async function saveHalls(){
   try{
     const snap = await db.collection('hallSchedule').get();
@@ -1612,6 +1623,15 @@ async function saveHalls(){
     return {ok:true};
   }catch(e){ console.error('saveHalls failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
 }
+async function saveCodeSingle(id, data){
+  try{ await db.collection('matchingCodes').doc(id).set(data); return {ok:true}; }
+  catch(e){ console.error('saveCodeSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
+}
+async function deleteCodeSingle(id){
+  try{ await db.collection('matchingCodes').doc(id).delete(); return {ok:true}; }
+  catch(e){ console.error('deleteCodeSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
+}
+
 async function saveCodes(){
   try{
     const snap = await db.collection('matchingCodes').get();
@@ -1888,8 +1908,12 @@ async function requestDeleteHall(){
   const h = halls.find(x=>x.id===viewingHallId);
   const ok = await verify(h);
   if(!ok) return;
-  halls = halls.filter(x=>x.id!==viewingHallId);
-  await saveHalls();
+  const targetId = viewingHallId;
+  let result;
+  try{ result = await withTimeout(deleteHallSingle(targetId), 15000); }
+  catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
+  if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
+  halls = halls.filter(x=>x.id!==targetId);
   closeHallDetail();
   renderHalls();
   toast('삭제되었습니다');
@@ -1928,20 +1952,23 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
   const submitBtn = document.querySelector('#hallForm button[type="submit"]');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
 
-  let backup = null, newEntry = null;
+  let backup = null, newEntry = null, targetId;
   if(editingHallId){
+    targetId = editingHallId;
     const idx = halls.findIndex(x=>x.id===editingHallId);
     backup = {...halls[idx]};
     halls[idx] = {...halls[idx], code, hall, datetime, memo};
   }else{
     const pw = document.getElementById('h_password').value;
     const pwHash = await hashPw(pw);
-    newEntry = {id:'h_'+Date.now(), code, hall, datetime, memo, pwHash};
+    targetId = 'h_'+Date.now();
+    newEntry = {id:targetId, code, hall, datetime, memo, pwHash};
     halls.push(newEntry);
   }
 
+  const { id: _omit, ...dataToSave } = halls.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveHalls(), 15000); }
+  try{ result = await withTimeout(saveHallSingle(targetId, dataToSave), 15000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2015,8 +2042,12 @@ async function requestDeleteCode(){
   const c = codes.find(x=>x.id===viewingCodeId);
   const ok = await verify(c);
   if(!ok) return;
-  codes = codes.filter(x=>x.id!==viewingCodeId);
-  await saveCodes();
+  const targetId = viewingCodeId;
+  let result;
+  try{ result = await withTimeout(deleteCodeSingle(targetId), 15000); }
+  catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
+  if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
+  codes = codes.filter(x=>x.id!==targetId);
   closeCodeDetail();
   renderCodes();
   toast('삭제되었습니다');
@@ -2049,20 +2080,23 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
   const submitBtn = document.querySelector('#codeForm button[type="submit"]');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
 
-  let backup = null, newEntry = null;
+  let backup = null, newEntry = null, targetId;
   if(editingCodeId){
+    targetId = editingCodeId;
     const idx = codes.findIndex(x=>x.id===editingCodeId);
     backup = {...codes[idx]};
     codes[idx] = {...codes[idx], vendor, category, sharer, code};
   }else{
     const pw = document.getElementById('c_password').value;
     const pwHash = await hashPw(pw);
-    newEntry = {id:'c_'+Date.now(), vendor, category, sharer, code, pwHash};
+    targetId = 'c_'+Date.now();
+    newEntry = {id:targetId, vendor, category, sharer, code, pwHash};
     codes.push(newEntry);
   }
 
+  const { id: _omit, ...dataToSave } = codes.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveCodes(), 15000); }
+  try{ result = await withTimeout(saveCodeSingle(targetId, dataToSave), 15000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2084,6 +2118,15 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
 });
 
 /* ============ WEDDING PREP CHECKLIST ============ */
+async function saveChecklistSingle(id, data){
+  try{ await db.collection('prepChecklist').doc(id).set(data); return {ok:true}; }
+  catch(e){ console.error('saveChecklistSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
+}
+async function deleteChecklistSingle(id){
+  try{ await db.collection('prepChecklist').doc(id).delete(); return {ok:true}; }
+  catch(e){ console.error('deleteChecklistSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
+}
+
 async function saveChecklists(){
   try{
     const snap = await db.collection('prepChecklist').get();
@@ -2185,8 +2228,9 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
   const submitBtn = document.querySelector('#checklistForm button[type="submit"]');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
 
-  let backup = null, newEntry = null;
+  let backup = null, newEntry = null, targetId;
   if(editingChecklistId){
+    targetId = editingChecklistId;
     const idx = checklists.findIndex(x=>x.id===editingChecklistId);
     backup = {...checklists[idx]};
     checklists[idx] = {...checklists[idx], ownerId, items, isPublic};
@@ -2198,12 +2242,14 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
       return;
     }
     const pwHash = await hashPw(pw);
-    newEntry = {id:'ck_'+Date.now(), ownerId, items, isPublic, pwHash};
+    targetId = 'ck_'+Date.now();
+    newEntry = {id:targetId, ownerId, items, isPublic, pwHash};
     checklists.push(newEntry);
   }
 
+  const { id: _omit, ...dataToSave } = checklists.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveChecklists(), 15000); }
+  try{ result = await withTimeout(saveChecklistSingle(targetId, dataToSave), 15000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2322,8 +2368,12 @@ async function requestDeleteChecklist(){
   const ok = await verify(item);
   if(!ok) return;
   if(!confirm('정말 삭제하시겠어요?')) return;
-  checklists = checklists.filter(x=>x.id!==viewingChecklistId);
-  await saveChecklists();
+  const targetId = viewingChecklistId;
+  let result;
+  try{ result = await withTimeout(deleteChecklistSingle(targetId), 15000); }
+  catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
+  if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
+  checklists = checklists.filter(x=>x.id!==targetId);
   closeChecklistDetail();
   renderChecklistList();
   toast('삭제되었습니다');
