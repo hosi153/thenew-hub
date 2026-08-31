@@ -241,7 +241,7 @@
     width:100%; max-width:100%; padding:12px 13px; border-radius:var(--radius-md); border:1px solid var(--border);
     font-size:16px; font-family:inherit; background:var(--surface-input); color:var(--ink); box-sizing:border-box;
   }
-  .field input[type="date"], .field input[type="time"]{
+  .field input[type="date"], .field input[type="time"], .field input[type="datetime-local"]{
     min-height:46px; width:100%; max-width:100%; display:block;
   }
   .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--accent); }
@@ -1030,8 +1030,7 @@
       </div>
       <div class="field">
         <label>예식 날짜 · 시간 <span class="req">*</span></label>
-        <input type="date" id="h_date" required style="margin-bottom:10px;">
-        <input type="time" id="h_time" required>
+        <input type="datetime-local" id="h_datetime" required>
       </div>
       <div class="field">
         <label>메모</label>
@@ -2209,9 +2208,7 @@ function openHallModal(id){
     document.getElementById('h_hall').value = h.hall;
     document.getElementById('h_memo').value = h.memo || '';
     if(h.datetime){
-      const [d,t] = h.datetime.split('T');
-      document.getElementById('h_date').value = d;
-      document.getElementById('h_time').value = t ? t.slice(0,5) : '';
+      document.getElementById('h_datetime').value = h.datetime;
     }
   }
   document.getElementById('hallOverlay').classList.add('show');
@@ -2222,10 +2219,8 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const code = document.getElementById('h_code').value.trim();
   const hall = document.getElementById('h_hall').value;
-  const date = document.getElementById('h_date').value;
-  const time = document.getElementById('h_time').value;
   const memo = document.getElementById('h_memo').value.trim();
-  const datetime = (date && time) ? `${date}T${time}` : '';
+  const datetime = document.getElementById('h_datetime').value || '';
 
   const submitBtn = document.querySelector('#hallForm button[type="submit"]');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
