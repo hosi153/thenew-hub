@@ -432,6 +432,7 @@
   .status-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   .loading{ text-align:center; padding:50px 10px; color:var(--ink-soft); font-size:13px; }
+  #hallLoadMoreSentinel, #codeLoadMoreSentinel{ padding:16px 10px; font-size:12px; min-height:1px; }
 </style>
 </head>
 <body>
@@ -1248,6 +1249,22 @@ function forceRerenderIfReady(){
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') forceRerenderIfReady(); });
 window.addEventListener('pageshow', forceRerenderIfReady);
+
+/* ---------- Infinite scroll trigger ---------- */
+let _scrollTicking = false;
+window.addEventListener('scroll', ()=>{
+  if(_scrollTicking) return;
+  _scrollTicking = true;
+  requestAnimationFrame(()=>{
+    _scrollTicking = false;
+    const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 500);
+    if(!nearBottom) return;
+    const activePage = document.querySelector('.page.active');
+    if(!activePage) return;
+    if(activePage.id==='page-halls' && typeof hallView!=='undefined' && hallView==='list') loadMoreHalls();
+    else if(activePage.id==='page-codes') loadMoreCodes();
+  });
+});
 window.addEventListener('focus', forceRerenderIfReady);
 setTimeout(()=>{
   const retryHtml = `<div class="empty">불러오는 데 시간이 오래 걸리고 있어요.<br><button type="button" class="btn btn-outline" style="margin-top:10px;" onclick="location.reload()">다시 시도</button></div>`;
@@ -1411,6 +1428,14 @@ const SEED_CODES = [
 let halls = [];
 let codes = [];
 let checklists = [];
+
+/* ---------- Pagination state (infinite scroll for halls/codes) ---------- */
+const PAGE_SIZE = 20;
+let hallPage = { lastDoc:null, hasMore:true, loading:false };
+let hallFullyLoaded = false;
+let codePage = { lastDoc:null, hasMore:true, loading:false };
+let codeFullyLoaded = false;
+let calMonthCache = {}; // 'YYYY-M' -> hall items for that calendar month
 let viewingChecklistId = null;
 let editingChecklistId = null;
 
@@ -1526,6 +1551,27 @@ async function deleteWithFallback(collection, docId){
       return {ok:true};
     }catch(e2){
       console.error('REST fallback delete also failed:', e2);
+      return {ok:false, error:(e2 && e2.message) || String(e2)};
+    }
+  }
+}
+/* Partial-field update (merge) — doesn't require the full document to already
+   be loaded locally. Used by admin patches so they work correctly even when
+   the target document isn't part of the currently-paginated data in memory. */
+async function mergeWithFallback(collection, docId, changes){
+  try{
+    await withTimeout(db.collection(collection).doc(docId).set(changes, {merge:true}), 7000);
+    return {ok:true};
+  }catch(e1){
+    console.warn(`SDK merge to ${collection}/${docId} failed, trying REST fallback:`, e1);
+    try{
+      const mask = Object.keys(changes).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+      const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?${mask}&key=${firebaseConfig.apiKey}`;
+      const res = await fetch(url, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({fields: toFirestoreFields(changes)}) });
+      if(!res.ok){ const t = await res.text().catch(()=> ''); throw new Error('rest-'+res.status+(t?(': '+t.slice(0,150)):'')); }
+      return {ok:true};
+    }catch(e2){
+      console.error('REST fallback merge also failed:', e2);
       return {ok:false, error:(e2 && e2.message) || String(e2)};
     }
   }
@@ -1647,74 +1693,85 @@ async function applyPatches(){
   for(const p of pending){
     const list = p.target==='hall' ? halls : codes;
     const collection = p.target==='hall' ? 'hallSchedule' : 'matchingCodes';
-    if(p.type==='delete'){
-      const idx = list.findIndex(x=>x.id===p.matchId);
-      if(idx>-1){
-        list.splice(idx,1);
+    try{
+      if(p.type==='delete'){
         await deleteWithFallback(collection, p.matchId);
+        const idx = list.findIndex(x=>x.id===p.matchId);
+        if(idx>-1) list.splice(idx,1);
+      }else if(p.type==='edit'){
+        // Partial merge — works correctly even if this document isn't part of
+        // the currently-loaded page (pagination may not have fetched it yet).
+        await mergeWithFallback(collection, p.matchId, p.changes);
+        const idx = list.findIndex(x=>x.id===p.matchId);
+        if(idx>-1) Object.assign(list[idx], p.changes);
+      }else if(p.type==='add'){
+        const newId = (p.target==='hall'?'h_':'c_')+'patch_'+p.id;
+        await writeWithFallback(collection, newId, p.item);
+        if(!list.some(x=>x.id===newId)) list.push({ id:newId, ...p.item });
       }
-    }else if(p.type==='edit'){
-      const idx = list.findIndex(x=>x.id===p.matchId);
-      if(idx>-1){
-        Object.assign(list[idx], p.changes);
-        const { id, ...data } = list[idx];
-        await writeWithFallback(collection, id, data);
-      }
-    }else if(p.type==='add'){
-      const newId = (p.target==='hall'?'h_':'c_')+'patch_'+p.id;
-      const item = { id:newId, ...p.item };
-      list.push(item);
-      const { id, ...data } = item;
-      await writeWithFallback(collection, id, data);
-    }
+    }catch(e){ console.error('patch apply failed for', p.id, e); }
     applied.push(p.id);
   }
+  calMonthCache = {};
   try{ await db.collection('meta').doc('appliedPatches').set({ids: applied}); }catch(e){}
 }
 
 /* ============ INIT ============ */
 async function init(){
-  const [hallsResult, codesResult, checklistsResult] = await Promise.all([
+  // Defensive reset up front: some mobile browsers restore a previously-typed
+  // search value on reload, which would incorrectly trigger a full-data load
+  // (or silently filter the list down to nothing) before we even start fetching.
+  const hs0 = document.getElementById('hallSearch'); if(hs0) hs0.value = '';
+  const cs0 = document.getElementById('codeSearch'); if(cs0) cs0.value = '';
+
+  const [, , checklistsResult] = await Promise.all([
+    // ---- Halls: seed if empty, otherwise load page 1 (upcoming) + undated items ----
     (async ()=>{
       try{
-        const list = await readWithFallback('hallSchedule');
-        if(list.length===0){
+        const existsSnap = await withTimeout(db.collection('hallSchedule').limit(1).get(), 8000);
+        if(existsSnap.empty){
           const batch = db.batch();
           SEED_HALLS.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
           try{ await withTimeout(batch.commit(), 10000); }catch(e){}
-          return SEED_HALLS;
+          halls = SEED_HALLS.slice();
+          hallFullyLoaded = true; hallPage.hasMore = false;
+        }else{
+          await Promise.all([ loadMoreHalls(), loadUndatedHalls() ]);
         }
-        return list;
-      }catch(e){ console.error('hallSchedule read failed entirely:', e); return SEED_HALLS; }
+      }catch(e){
+        console.error('hall init failed, using seed data as fallback:', e);
+        halls = SEED_HALLS.slice(); hallFullyLoaded = true; hallPage.hasMore = false;
+      }
     })(),
+    // ---- Codes: seed if empty, otherwise load page 1 ----
     (async ()=>{
       try{
-        const list = await readWithFallback('matchingCodes');
-        if(list.length===0){
+        const existsSnap = await withTimeout(db.collection('matchingCodes').limit(1).get(), 8000);
+        if(existsSnap.empty){
           const batch = db.batch();
           SEED_CODES.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
           try{ await withTimeout(batch.commit(), 10000); }catch(e){}
-          return SEED_CODES;
+          codes = SEED_CODES.slice();
+          codeFullyLoaded = true; codePage.hasMore = false;
+        }else{
+          await loadMoreCodes();
         }
-        return list;
-      }catch(e){ console.error('matchingCodes read failed entirely:', e); return SEED_CODES; }
+      }catch(e){
+        console.error('code init failed, using seed data as fallback:', e);
+        codes = SEED_CODES.slice(); codeFullyLoaded = true; codePage.hasMore = false;
+      }
     })(),
+    // ---- Checklist: small collection, simple one-time load (no pagination needed) ----
     (async ()=>{
       try{ return await readWithFallback('prepChecklist'); }
       catch(e){ console.error('prepChecklist read failed entirely:', e); return []; }
     })(),
   ]);
-  halls = hallsResult;
-  codes = codesResult;
   checklists = checklistsResult;
 
   try{ await applyPatches(); }catch(e){ console.error('applyPatches failed:', e); }
 
   try{
-    // Defensive reset: some mobile browsers restore a previously-typed search
-    // value on reload, which would silently filter the list down to nothing.
-    const hs = document.getElementById('hallSearch'); if(hs) hs.value = '';
-    const cs = document.getElementById('codeSearch'); if(cs) cs.value = '';
     renderHallChips();
     renderCodeChips();
     renderHalls();
@@ -1729,6 +1786,7 @@ async function init(){
     });
   }
 }
+
 
 /* Lightweight single-document write/delete — used for individual add/edit/delete
    actions so we don't have to re-fetch and rewrite the whole collection every time. */
@@ -1824,17 +1882,75 @@ function setHallFilter(h){ hallFilter=h; renderHallChips(); renderHalls(); }
 let showPast = false;
 function setShowPast(v){ showPast = v; renderHalls(); }
 
-function renderHalls(){
-  const q = document.getElementById('hallSearch').value.trim().toLowerCase();
+/* ---------- Hall schedule: paginated loading ---------- */
+function nowIsoLocal(){
   const now = new Date();
   const p2 = n=>String(n).padStart(2,'0');
-  const nowIso = `${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}T${p2(now.getHours())}:${p2(now.getMinutes())}`;
+  return `${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}T${p2(now.getHours())}:${p2(now.getMinutes())}`;
+}
+async function loadMoreHalls(){
+  if(hallPage.loading || !hallPage.hasMore || hallFullyLoaded) return;
+  hallPage.loading = true;
+  renderHalls();
+  try{
+    let q = db.collection('hallSchedule').where('datetime','>=', nowIsoLocal()).orderBy('datetime').limit(PAGE_SIZE);
+    if(hallPage.lastDoc) q = q.startAfter(hallPage.lastDoc);
+    const snap = await withTimeout(q.get(), 8000);
+    const items = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    items.forEach(it=>{ if(!halls.some(h=>h.id===it.id)) halls.push(it); });
+    if(snap.docs.length) hallPage.lastDoc = snap.docs[snap.docs.length-1];
+    hallPage.hasMore = snap.docs.length === PAGE_SIZE;
+  }catch(e){
+    console.error('loadMoreHalls failed:', e);
+    hallPage.hasMore = false;
+  }
+  hallPage.loading = false;
+  renderHalls();
+}
+async function loadUndatedHalls(){
+  try{
+    const snap = await withTimeout(db.collection('hallSchedule').where('datetime','==','').get(), 8000);
+    const items = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    items.forEach(it=>{ if(!halls.some(h=>h.id===it.id)) halls.push(it); });
+  }catch(e){ console.error('loadUndatedHalls failed:', e); }
+}
+/* Search, a specific hall filter, or "지난 식 보기" all need the complete
+   dataset (pagination alone can't serve them correctly), so fall back to a
+   one-time full load in those cases. */
+async function ensureHallsFullyLoaded(){
+  if(hallFullyLoaded) return;
+  hallFullyLoaded = true;
+  try{ halls = await readWithFallback('hallSchedule'); }
+  catch(e){ console.error('ensureHallsFullyLoaded failed:', e); }
+  renderHalls();
+  calMonthCache = {};
+}
+
+function renderHalls(){
+  const q = document.getElementById('hallSearch').value.trim().toLowerCase();
+  const nowIso = nowIsoLocal();
+
+  // Search, a non-전체 hall filter, or "지난 식 보기" all require the full
+  // dataset — pagination alone can't answer those correctly, so load everything
+  // once (cached for the rest of the session) instead of guessing.
+  const needsFullData = !!q || hallFilter!=='전체' || showPast;
+  if(needsFullData && !hallFullyLoaded){
+    document.getElementById('hallList').innerHTML = `<div class="loading">불러오는 중...</div>`;
+    ensureHallsFullyLoaded();
+    return;
+  }
+
   let list = halls.filter(h => (hallFilter==='전체' || h.hall===hallFilter) && (!q || h.code.toLowerCase().includes(q)));
   if(!showPast){ list = list.filter(h => !h.datetime || h.datetime >= nowIso); }
   list = list.slice().sort((a,b)=> (a.datetime||'9999').localeCompare(b.datetime||'9999'));
 
   const el = document.getElementById('hallList');
-  if(list.length===0){ el.innerHTML = `<div class="empty">조건에 맞는 일정이 없습니다.</div>`; return; }
+  if(list.length===0){
+    el.innerHTML = hallPage.loading
+      ? `<div class="loading">불러오는 중...</div>`
+      : `<div class="empty">조건에 맞는 일정이 없습니다.</div>`;
+    return;
+  }
 
   const rows = list.map(h=>{
     let dateLabel = '미정';
@@ -1852,10 +1968,14 @@ function renderHalls(){
     </tr>`;
   }).join('');
 
+  const footer = (!needsFullData && hallPage.hasMore)
+    ? `<div class="loading" id="hallLoadMoreSentinel">${hallPage.loading ? '더 불러오는 중...' : ''}</div>`
+    : '';
+
   el.innerHTML = `<div class="table-wrap"><table class="list-table">
     <thead><tr><th>코드</th><th>홀</th><th>일정</th><th>메모</th></tr></thead>
     <tbody>${rows}</tbody>
-  </table></div>`;
+  </table></div>${footer}`;
 
   renderHomeWeek();
 }
@@ -1890,16 +2010,54 @@ function calShiftMonth(diff){
 
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
-function renderCalendar(){
+/* Fetch only the hall schedule docs that fall within one calendar month,
+   instead of relying on the full in-memory dataset. Cached per month so
+   flipping back and forth doesn't re-query. */
+async function loadCalendarMonth(y, m){
+  const key = `${y}-${m}`;
+  if(calMonthCache[key]) return calMonthCache[key];
+  const p2 = n=>String(n).padStart(2,'0');
+  const startStr = `${y}-${p2(m+1)}-01T00:00`;
+  const endStr = (m===11) ? `${y+1}-01-01T00:00` : `${y}-${p2(m+2)}-01T00:00`;
+  try{
+    const snap = await withTimeout(
+      db.collection('hallSchedule').where('datetime','>=',startStr).where('datetime','<',endStr).get(),
+      8000
+    );
+    const items = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    calMonthCache[key] = items;
+    return items;
+  }catch(e){
+    console.error('loadCalendarMonth query failed, trying REST list fallback:', e);
+    try{
+      const all = await firestoreRestList('hallSchedule');
+      const items = all.filter(h=>h.datetime && h.datetime>=startStr && h.datetime<endStr);
+      calMonthCache[key] = items;
+      return items;
+    }catch(e2){
+      console.error('Calendar month fallback also failed:', e2);
+      return [];
+    }
+  }
+}
+
+let _calByDate = {};
+async function renderCalendar(){
   const y = calCursor.getFullYear(), m = calCursor.getMonth();
   document.getElementById('calTitle').textContent = `${y}년 ${m+1}월`;
+  document.getElementById('calGrid').innerHTML = `<div class="loading" style="grid-column:1/-1;">불러오는 중...</div>`;
+  document.getElementById('calDayList').innerHTML = '';
 
-  const dated = halls.filter(h=>h.datetime);
+  const monthItems = await loadCalendarMonth(y, m);
+  // A month switch may have happened again while this was loading — bail if so.
+  if(calCursor.getFullYear()!==y || calCursor.getMonth()!==m) return;
+
   const byDate = {};
-  dated.forEach(h=>{
+  monthItems.forEach(h=>{
     const key = h.datetime.slice(0,10);
     (byDate[key] = byDate[key] || []).push(h);
   });
+  _calByDate = byDate;
 
   const firstDow = new Date(y,m,1).getDay();
   const daysInMonth = new Date(y,m+1,0).getDate();
@@ -1928,7 +2086,11 @@ function renderCalendar(){
 
 function calSelectDate(key){
   calSelectedDate = key;
-  renderCalendar();
+  document.querySelectorAll('.cal-cell.selected').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.cal-cell').forEach(c=>{
+    if(c.getAttribute('onclick')===`calSelectDate('${key}')`) c.classList.add('selected');
+  });
+  renderCalDayList(key, _calByDate[key]||[]);
 }
 
 function renderCalDayList(key, items){
@@ -2021,6 +2183,7 @@ async function requestDeleteHall(){
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   halls = halls.filter(x=>x.id!==targetId);
+  calMonthCache = {};
   closeHallDetail();
   renderHalls();
   toast('삭제되었습니다');
@@ -2092,6 +2255,7 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
   }
 
   closeHallModal();
+  calMonthCache = {};
   renderHalls();
   toast('저장되었습니다');
 });
@@ -2104,13 +2268,53 @@ function renderCodeChips(){
 }
 function setCodeFilter(c){ codeFilter=c; renderCodeChips(); renderCodes(); }
 
+/* ---------- Matching codes: paginated loading ---------- */
+async function loadMoreCodes(){
+  if(codePage.loading || !codePage.hasMore || codeFullyLoaded) return;
+  codePage.loading = true;
+  renderCodes();
+  try{
+    let q = db.collection('matchingCodes').orderBy(firebase.firestore.FieldPath.documentId()).limit(PAGE_SIZE);
+    if(codePage.lastDoc) q = q.startAfter(codePage.lastDoc);
+    const snap = await withTimeout(q.get(), 8000);
+    const items = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    items.forEach(it=>{ if(!codes.some(c=>c.id===it.id)) codes.push(it); });
+    if(snap.docs.length) codePage.lastDoc = snap.docs[snap.docs.length-1];
+    codePage.hasMore = snap.docs.length === PAGE_SIZE;
+  }catch(e){
+    console.error('loadMoreCodes failed:', e);
+    codePage.hasMore = false;
+  }
+  codePage.loading = false;
+  renderCodes();
+}
+async function ensureCodesFullyLoaded(){
+  if(codeFullyLoaded) return;
+  codeFullyLoaded = true;
+  try{ codes = await readWithFallback('matchingCodes'); }
+  catch(e){ console.error('ensureCodesFullyLoaded failed:', e); }
+  renderCodes();
+}
+
 function renderCodes(){
   const q = document.getElementById('codeSearch').value.trim().toLowerCase();
+  const needsFullData = !!q || codeFilter!=='전체';
+  if(needsFullData && !codeFullyLoaded){
+    document.getElementById('codeList').innerHTML = `<div class="loading">불러오는 중...</div>`;
+    ensureCodesFullyLoaded();
+    return;
+  }
+
   let list = codes.filter(c => (codeFilter==='전체' || c.category===codeFilter) &&
     (!q || (c.vendor||'').toLowerCase().includes(q) || (c.sharer||'').toLowerCase().includes(q)));
 
   const el = document.getElementById('codeList');
-  if(list.length===0){ el.innerHTML = `<div class="empty">조건에 맞는 항목이 없습니다.</div>`; return; }
+  if(list.length===0){
+    el.innerHTML = codePage.loading
+      ? `<div class="loading">불러오는 중...</div>`
+      : `<div class="empty">조건에 맞는 항목이 없습니다.</div>`;
+    return;
+  }
 
   const rows = list.map(c=>`
     <tr class="rowitem" onclick="openCodeDetail('${c.id}')">
@@ -2120,10 +2324,14 @@ function renderCodes(){
       <td>${escapeHtml(c.code)}</td>
     </tr>`).join('');
 
+  const footer = (!needsFullData && codePage.hasMore)
+    ? `<div class="loading" id="codeLoadMoreSentinel">${codePage.loading ? '더 불러오는 중...' : ''}</div>`
+    : '';
+
   el.innerHTML = `<div class="table-wrap"><table class="list-table">
     <thead><tr><th>업체명</th><th>카테고리</th><th>공유자</th><th>짝꿍코드</th></tr></thead>
     <tbody>${rows}</tbody>
-  </table></div>`;
+  </table></div>${footer}`;
 }
 
 /* ---- detail view ---- */
