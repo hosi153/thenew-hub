@@ -74,3 +74,15 @@ test('Miyu Snap partner entry and 2027 packages are present', () => {
   assert.match(html, /<h3>18만원<\/h3>/);
   assert.match(html, /<h3>22만원<\/h3>/);
 });
+
+test('YELOVE partner entry, benefits, products, and links are present', () => {
+  assert.match(html, /data-partner="yelove"/);
+  assert.match(html, /id="partner-yelove"/);
+  assert.match(html, /YELOVE 예러브/);
+  assert.match(html, /식전영상과 식중영상 동시 구매 시 20,000원 할인/);
+  assert.match(html, /디어러브/);
+  assert.match(html, /로즈러브/);
+  assert.match(html, /데이지러브/);
+  assert.match(html, /https:\/\/pf\.kakao\.com\/_fxlswn/);
+  assert.match(html, /https:\/\/www\.instagram\.com\/yelove_wedding/);
+});
