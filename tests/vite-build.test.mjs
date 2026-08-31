@@ -259,3 +259,17 @@ test('bugfix: the checklist form no longer has a nested inner scroll fighting th
   assert.doesNotMatch(formWrapper, /max-height/);
   assert.doesNotMatch(formWrapper, /overflow-y:auto/);
 });
+
+test('bugfix: the matching-code list table does not cause horizontal scroll on narrow screens', () => {
+  const codesView = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'view.js'), 'utf8');
+  assert.match(codesView, /class="table-wrap code-table-wrap"/);
+  assert.match(codesView, /class="list-table code-list-table"/);
+
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  assert.match(css, /\.code-table-wrap\{\s*overflow-x:hidden;\s*\}/);
+  assert.match(css, /table\.code-list-table\{\s*table-layout:fixed;\s*white-space:normal;\s*\}/);
+  // all four columns (vendor/category/sharer/code) should have explicit widths
+  for(let column = 1; column <= 4; column++){
+    assert.match(css, new RegExp(`table\\.code-list-table td:nth-child\\(${column}\\)\\{\\s*width:`));
+  }
+});

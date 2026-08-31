@@ -475,3 +475,15 @@ Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변�
 **검증**: `npm run build` 성공, `tests/vite-build.test.mjs`에 회귀 테스트 1개 추가(작업 중 테스트 이름 문자열의 이스케이프 문법 오류로 한 번 실패 → 즉시 수정), **전체 33개 테스트 통과**.
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — 버그 수정: 짝꿍코드 페이지 가로 스크롤
+
+**사용자 리포트**: "코드 페이지에서 가로 스크롤이 생기고있어"
+
+**원인**: 이전에 홀 일정 테이블에서 같은 문제(4개 컬럼이 `white-space:nowrap`으로 강제되어 좁은 화면에서 가로 넘침)를 겪고 `hall-list-table` 전용 클래스로 고쳤었는데, 그때 짝꿍코드 테이블(업체명/카테고리/공유자/짝꿍코드 4열)에는 동일 조치를 안 해서 base `table.list-table{ white-space:nowrap; }` 규칙이 그대로 적용되고 있었음.
+
+**수정**: `web/src/features/codes/view.js`의 테이블에 `code-table-wrap`/`code-list-table` 전용 클래스 부여, `web/src/style.css`에 `table-layout:fixed; white-space:normal;` + 4개 컬럼 고정 너비(28%/20%/26%/26%) 규칙 추가 — hall-list-table 때와 동일한 패턴.
+
+**검증**: `npm run build` 성공, 회귀 테스트 1개 추가(4개 컬럼 모두 명시적 너비를 갖는지, wrap 클래스가 overflow-x:hidden인지 검증), **전체 34개 테스트 통과**.
+
+**커밋**: (아래 실제 커밋 해시로 갱신)

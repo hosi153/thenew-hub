@@ -146,7 +146,7 @@ export function renderCodes(){
     ? `<div class="empty">${escapeHtml(page.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadCodes()">다시 시도</button></div>`
     : (!needsFullData && page.hasMore)
     ? `<div class="loading" id="codeLoadMoreSentinel">${page.loading ? '더 불러오는 중...' : ''}</div>` : '';
-  const html = `<div class="table-wrap"><table class="list-table">
+  const html = `<div class="table-wrap code-table-wrap"><table class="list-table code-list-table">
     <thead><tr><th>업체명</th><th>카테고리</th><th>공유자</th><th>짝꿍코드</th></tr></thead>
     <tbody>${rows}</tbody></table></div>${footer}`;
   element.innerHTML = html;
