@@ -289,6 +289,12 @@
     display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:var(--radius-pill);
     background:var(--accent-tint); color:var(--accent-deep); white-space:nowrap;
   }
+  .hall-tag{
+    display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700;
+    padding:3px 9px; border-radius:var(--radius-pill); white-space:nowrap;
+  }
+  .hall-tag-dot{ width:6px; height:6px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .chip .hall-tag-dot{ margin-right:1px; }
 
   .divider{ height:1px; background:var(--border); margin:20px 0; }
 
@@ -1487,7 +1493,10 @@ function openAddModal(){
 function renderHallChips(){
   const halls_ = ['전체','제니스홀','더뉴홀','르노브홀'];
   const wrap = document.getElementById('hallChips');
-  wrap.innerHTML = halls_.map(h=>`<button class="chip ${h===hallFilter?'active':''}" onclick="setHallFilter('${h}')">${h}</button>`).join('');
+  wrap.innerHTML = halls_.map(h=>{
+    const dot = h==='전체' ? '' : `<i class="hall-tag-dot" style="background:${hallColor(h)}"></i>`;
+    return `<button class="chip ${h===hallFilter?'active':''}" onclick="setHallFilter('${h}')" style="display:inline-flex; align-items:center; gap:6px;">${dot}${h}</button>`;
+  }).join('');
 }
 function setHallFilter(h){ hallFilter=h; renderHallChips(); renderHalls(); }
 
@@ -1509,7 +1518,7 @@ function renderHalls(){
     return `
     <tr class="rowitem" onclick="openHallDetail('${h.id}')">
       <td><b>${escapeHtml(h.code)}</b></td>
-      <td><span class="hall-badge">${h.hall}</span></td>
+      <td>${hallTag(h.hall)}</td>
       <td>${dateLabel}</td>
       <td class="memo-cell">${escapeHtml(h.memo||'')}</td>
     </tr>`;
@@ -1535,7 +1544,13 @@ function setHallView(v){
 }
 
 /* ---------- Calendar mode ---------- */
-const HALL_DOT_COLOR = { '제니스홀':'#3355FF', '더뉴홀':'#D98F2B', '르노브홀':'#C2447A' };
+/* ---------- Unified per-hall color (used everywhere: badges, calendar dots, filter chips) ---------- */
+const HALL_COLORS = { '제니스홀':'#3355FF', '더뉴홀':'#D98F2B', '르노브홀':'#C2447A' };
+function hallColor(hall){ return HALL_COLORS[hall] || '#767B85'; }
+function hallTag(hall){
+  const c = hallColor(hall);
+  return `<span class="hall-tag" style="background:${c}22; color:${c};"><i class="hall-tag-dot" style="background:${c}"></i>${escapeHtml(hall)}</span>`;
+}
 let calCursor = new Date(); calCursor.setDate(1);
 let calSelectedDate = null;
 
@@ -1568,7 +1583,7 @@ function renderCalendar(){
     const dateObj = new Date(y,m,day);
     const key = ymd(dateObj);
     const items = (byDate[key]||[]).slice().sort((a,b)=>a.datetime.localeCompare(b.datetime));
-    const dots = items.slice(0,4).map(h=>`<span class="cal-dot" style="background:${HALL_DOT_COLOR[h.hall]||'#888'}"></span>`).join('');
+    const dots = items.slice(0,4).map(h=>`<span class="cal-dot" style="background:${hallColor(h.hall)}"></span>`).join('');
     const cls = ['cal-cell', key===todayKey?'today':'', key===calSelectedDate?'selected':''].filter(Boolean).join(' ');
     cells += `<div class="${cls}" onclick="calSelectDate('${key}')">${day}<div class="cal-dots">${dots}</div></div>`;
   }
@@ -1597,7 +1612,7 @@ function renderCalDayList(key, items){
     return `<div class="cal-day-row" onclick="openHallDetail('${h.id}')">
       <span class="time">${t}</span>
       <span class="code">${escapeHtml(h.code)}</span>
-      <span class="hall-badge">${h.hall}</span>
+      ${hallTag(h.hall)}
     </div>`;
   }).join('');
   document.getElementById('calDayList').innerHTML = `<div class="cal-daylist-title">${label}</div>${rows}`;
@@ -1633,7 +1648,7 @@ function renderHomeWeek(){
     return `<div class="week-row">
       <span class="wd">${label}</span>
       <span class="wc">${escapeHtml(h.code)}</span>
-      <span class="hall-badge">${h.hall}</span>
+      ${hallTag(h.hall)}
     </div>`;
   }).join('');
 }
@@ -1643,7 +1658,7 @@ function openHallDetail(id){
   viewingHallId = id;
   const h = halls.find(x=>x.id===id);
   document.getElementById('hd_code').textContent = h.code;
-  document.getElementById('hd_hall').textContent = h.hall;
+  document.getElementById('hd_hall').innerHTML = hallTag(h.hall);
   let dl = '미정';
   if(h.datetime){
     const d = new Date(h.datetime);
