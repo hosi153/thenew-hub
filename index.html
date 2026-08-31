@@ -506,7 +506,7 @@
     </div>
 
     <div id="hallListView">
-      <input class="search" id="hallSearch" placeholder="코드(닉네임)로 검색..." oninput="renderHalls()">
+      <input class="search" id="hallSearch" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="renderHalls()">
       <div class="chiprow" id="hallChips"></div>
       <label class="past-toggle">
         <input type="checkbox" id="showPastToggle" onchange="setShowPast(this.checked)">
@@ -536,7 +536,7 @@
     <div class="kicker">REFERRAL CODE</div><div class="section-title">짝꿍코드</div>
     <p class="section-sub">먼저 계약한 분들의 짝꿍코드를 확인하고, 본인 것도 등록해주세요.</p>
 
-    <input class="search" id="codeSearch" placeholder="업체명 / 닉네임으로 검색..." oninput="renderCodes()">
+    <input class="search" id="codeSearch" placeholder="업체명 / 닉네임으로 검색..." autocomplete="off" oninput="renderCodes()">
     <div class="chiprow" id="codeChips"></div>
 
     <div id="codeList"><div class="loading">불러오는 중...</div></div>
@@ -1240,7 +1240,7 @@ setTimeout(()=>{
     const el = document.getElementById(id);
     if(el && el.innerHTML.includes('불러오는 중')) el.innerHTML = retryHtml;
   });
-}, 20000);
+}, 25000);
 
 
 /* ============ SEED DATA (migrated from Notion) ============ */
@@ -1450,6 +1450,109 @@ let viewingHallId = null;
 let viewingCodeId = null;
 
 /* ============ HASH HELPER ============ */
+/* ============ FIRESTORE REST FALLBACK ============
+   The Firestore SDK's normal channel (streaming or long-polling) can be silently
+   blackholed by some carrier proxies / ad blockers / VPNs, causing writes to hang
+   forever instead of failing fast. As a fallback, we can talk to Firestore over
+   plain HTTPS via its REST API, which behaves like any normal fetch() request and
+   is far less likely to be specifically blocked. */
+function toFirestoreValue(v){
+  if(v === null || v === undefined) return {nullValue: null};
+  if(typeof v === 'boolean') return {booleanValue: v};
+  if(typeof v === 'number') return Number.isInteger(v) ? {integerValue: String(v)} : {doubleValue: v};
+  if(typeof v === 'string') return {stringValue: v};
+  if(Array.isArray(v)) return {arrayValue: {values: v.map(toFirestoreValue)}};
+  if(typeof v === 'object') return {mapValue: {fields: toFirestoreFields(v)}};
+  return {stringValue: String(v)};
+}
+function toFirestoreFields(obj){
+  const fields = {};
+  Object.entries(obj || {}).forEach(([k,v])=>{ fields[k] = toFirestoreValue(v); });
+  return fields;
+}
+async function firestoreRestSet(collection, docId, data){
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${firebaseConfig.apiKey}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ fields: toFirestoreFields(data) })
+  });
+  if(!res.ok){ const t = await res.text().catch(()=> ''); throw new Error('rest-'+res.status+(t?(': '+t.slice(0,150)):'')); }
+}
+async function firestoreRestDelete(collection, docId){
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}/${encodeURIComponent(docId)}?key=${firebaseConfig.apiKey}`;
+  const res = await fetch(url, { method: 'DELETE' });
+  if(!res.ok){ const t = await res.text().catch(()=> ''); throw new Error('rest-'+res.status+(t?(': '+t.slice(0,150)):'')); }
+}
+/* Try the SDK first (fast path); if it fails or hangs, fall back to plain REST. */
+async function writeWithFallback(collection, docId, data){
+  try{
+    await withTimeout(db.collection(collection).doc(docId).set(data), 7000);
+    return {ok:true};
+  }catch(e1){
+    console.warn(`SDK write to ${collection}/${docId} failed, trying REST fallback:`, e1);
+    try{
+      await withTimeout(firestoreRestSet(collection, docId, data), 10000);
+      return {ok:true};
+    }catch(e2){
+      console.error('REST fallback write also failed:', e2);
+      return {ok:false, error:(e2 && e2.message) || String(e2)};
+    }
+  }
+}
+async function deleteWithFallback(collection, docId){
+  try{
+    await withTimeout(db.collection(collection).doc(docId).delete(), 7000);
+    return {ok:true};
+  }catch(e1){
+    console.warn(`SDK delete of ${collection}/${docId} failed, trying REST fallback:`, e1);
+    try{
+      await withTimeout(firestoreRestDelete(collection, docId), 10000);
+      return {ok:true};
+    }catch(e2){
+      console.error('REST fallback delete also failed:', e2);
+      return {ok:false, error:(e2 && e2.message) || String(e2)};
+    }
+  }
+}
+
+function fromFirestoreValue(v){
+  if(!v) return null;
+  if('stringValue' in v) return v.stringValue;
+  if('booleanValue' in v) return v.booleanValue;
+  if('integerValue' in v) return parseInt(v.integerValue,10);
+  if('doubleValue' in v) return v.doubleValue;
+  if('nullValue' in v) return null;
+  if('mapValue' in v) return fromFirestoreFields((v.mapValue && v.mapValue.fields) || {});
+  if('arrayValue' in v) return ((v.arrayValue && v.arrayValue.values) || []).map(fromFirestoreValue);
+  return null;
+}
+function fromFirestoreFields(fields){
+  const obj = {};
+  Object.entries(fields || {}).forEach(([k,v])=>{ obj[k] = fromFirestoreValue(v); });
+  return obj;
+}
+async function firestoreRestList(collection){
+  const url = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collection}?pageSize=300&key=${firebaseConfig.apiKey}`;
+  const res = await fetch(url);
+  if(!res.ok){ throw new Error('rest-list-'+res.status); }
+  const json = await res.json();
+  return (json.documents || []).map(doc=>{
+    const id = doc.name.split('/').pop();
+    return { id, ...fromFirestoreFields(doc.fields || {}) };
+  });
+}
+/* Try the SDK first (fast path); if it fails or hangs, fall back to plain REST. */
+async function readWithFallback(collection){
+  try{
+    const snap = await withTimeout(db.collection(collection).get(), 7000);
+    return snap.docs.map(d=>({id:d.id, ...d.data()}));
+  }catch(e1){
+    console.warn(`SDK read of ${collection} failed, trying REST fallback:`, e1);
+    return await withTimeout(firestoreRestList(collection), 10000);
+  }
+}
+
 /* Wraps a promise so it never hangs forever — rejects after `ms` if unresolved (e.g. stuck network) */
 function withTimeout(promise, ms=15000){
   return Promise.race([
@@ -1549,33 +1652,31 @@ async function init(){
   const [hallsResult, codesResult, checklistsResult] = await Promise.all([
     (async ()=>{
       try{
-        const snap = await withTimeout(db.collection('hallSchedule').get(), 10000);
-        if(snap.empty){
+        const list = await readWithFallback('hallSchedule');
+        if(list.length===0){
           const batch = db.batch();
           SEED_HALLS.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
-          await batch.commit();
+          try{ await withTimeout(batch.commit(), 10000); }catch(e){}
           return SEED_HALLS;
         }
-        return snap.docs.map(d=>({id:d.id, ...d.data()}));
-      }catch(e){ return SEED_HALLS; }
+        return list;
+      }catch(e){ console.error('hallSchedule read failed entirely:', e); return SEED_HALLS; }
     })(),
     (async ()=>{
       try{
-        const snap = await withTimeout(db.collection('matchingCodes').get(), 10000);
-        if(snap.empty){
+        const list = await readWithFallback('matchingCodes');
+        if(list.length===0){
           const batch = db.batch();
           SEED_CODES.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
-          await batch.commit();
+          try{ await withTimeout(batch.commit(), 10000); }catch(e){}
           return SEED_CODES;
         }
-        return snap.docs.map(d=>({id:d.id, ...d.data()}));
-      }catch(e){ return SEED_CODES; }
+        return list;
+      }catch(e){ console.error('matchingCodes read failed entirely:', e); return SEED_CODES; }
     })(),
     (async ()=>{
-      try{
-        const snap = await withTimeout(db.collection('prepChecklist').get(), 10000);
-        return snap.docs.map(d=>({id:d.id, ...d.data()}));
-      }catch(e){ return []; }
+      try{ return await readWithFallback('prepChecklist'); }
+      catch(e){ console.error('prepChecklist read failed entirely:', e); return []; }
     })(),
   ]);
   halls = hallsResult;
@@ -1585,6 +1686,10 @@ async function init(){
   try{ await applyPatches(); }catch(e){ console.error('applyPatches failed:', e); }
 
   try{
+    // Defensive reset: some mobile browsers restore a previously-typed search
+    // value on reload, which would silently filter the list down to nothing.
+    const hs = document.getElementById('hallSearch'); if(hs) hs.value = '';
+    const cs = document.getElementById('codeSearch'); if(cs) cs.value = '';
     renderHallChips();
     renderCodeChips();
     renderHalls();
@@ -1602,14 +1707,8 @@ async function init(){
 
 /* Lightweight single-document write/delete — used for individual add/edit/delete
    actions so we don't have to re-fetch and rewrite the whole collection every time. */
-async function saveHallSingle(id, data){
-  try{ await db.collection('hallSchedule').doc(id).set(data); return {ok:true}; }
-  catch(e){ console.error('saveHallSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
-}
-async function deleteHallSingle(id){
-  try{ await db.collection('hallSchedule').doc(id).delete(); return {ok:true}; }
-  catch(e){ console.error('deleteHallSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
-}
+async function saveHallSingle(id, data){ return writeWithFallback('hallSchedule', id, data); }
+async function deleteHallSingle(id){ return deleteWithFallback('hallSchedule', id); }
 
 async function saveHalls(){
   try{
@@ -1623,14 +1722,8 @@ async function saveHalls(){
     return {ok:true};
   }catch(e){ console.error('saveHalls failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
 }
-async function saveCodeSingle(id, data){
-  try{ await db.collection('matchingCodes').doc(id).set(data); return {ok:true}; }
-  catch(e){ console.error('saveCodeSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
-}
-async function deleteCodeSingle(id){
-  try{ await db.collection('matchingCodes').doc(id).delete(); return {ok:true}; }
-  catch(e){ console.error('deleteCodeSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
-}
+async function saveCodeSingle(id, data){ return writeWithFallback('matchingCodes', id, data); }
+async function deleteCodeSingle(id){ return deleteWithFallback('matchingCodes', id); }
 
 async function saveCodes(){
   try{
@@ -1910,7 +2003,7 @@ async function requestDeleteHall(){
   if(!ok) return;
   const targetId = viewingHallId;
   let result;
-  try{ result = await withTimeout(deleteHallSingle(targetId), 15000); }
+  try{ result = await withTimeout(deleteHallSingle(targetId), 20000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   halls = halls.filter(x=>x.id!==targetId);
@@ -1968,7 +2061,7 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
 
   const { id: _omit, ...dataToSave } = halls.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveHallSingle(targetId, dataToSave), 15000); }
+  try{ result = await withTimeout(saveHallSingle(targetId, dataToSave), 20000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2044,7 +2137,7 @@ async function requestDeleteCode(){
   if(!ok) return;
   const targetId = viewingCodeId;
   let result;
-  try{ result = await withTimeout(deleteCodeSingle(targetId), 15000); }
+  try{ result = await withTimeout(deleteCodeSingle(targetId), 20000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   codes = codes.filter(x=>x.id!==targetId);
@@ -2096,7 +2189,7 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
 
   const { id: _omit, ...dataToSave } = codes.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveCodeSingle(targetId, dataToSave), 15000); }
+  try{ result = await withTimeout(saveCodeSingle(targetId, dataToSave), 20000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2118,14 +2211,8 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
 });
 
 /* ============ WEDDING PREP CHECKLIST ============ */
-async function saveChecklistSingle(id, data){
-  try{ await db.collection('prepChecklist').doc(id).set(data); return {ok:true}; }
-  catch(e){ console.error('saveChecklistSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
-}
-async function deleteChecklistSingle(id){
-  try{ await db.collection('prepChecklist').doc(id).delete(); return {ok:true}; }
-  catch(e){ console.error('deleteChecklistSingle failed:', e); return {ok:false, error:(e&&(e.code||e.message))||String(e)}; }
-}
+async function saveChecklistSingle(id, data){ return writeWithFallback('prepChecklist', id, data); }
+async function deleteChecklistSingle(id){ return deleteWithFallback('prepChecklist', id); }
 
 async function saveChecklists(){
   try{
@@ -2249,7 +2336,7 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
 
   const { id: _omit, ...dataToSave } = checklists.find(x=>x.id===targetId);
   let result;
-  try{ result = await withTimeout(saveChecklistSingle(targetId, dataToSave), 15000); }
+  try{ result = await withTimeout(saveChecklistSingle(targetId, dataToSave), 20000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
@@ -2370,7 +2457,7 @@ async function requestDeleteChecklist(){
   if(!confirm('정말 삭제하시겠어요?')) return;
   const targetId = viewingChecklistId;
   let result;
-  try{ result = await withTimeout(deleteChecklistSingle(targetId), 15000); }
+  try{ result = await withTimeout(deleteChecklistSingle(targetId), 20000); }
   catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
   if(!result.ok){ toast('삭제 실패: ' + (result.error || '알 수 없는 오류'), 6000); return; }
   checklists = checklists.filter(x=>x.id!==targetId);
