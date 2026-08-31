@@ -1436,6 +1436,14 @@ let viewingHallId = null;
 let viewingCodeId = null;
 
 /* ============ HASH HELPER ============ */
+/* Wraps a promise so it never hangs forever — rejects after `ms` if unresolved (e.g. stuck network) */
+function withTimeout(promise, ms=15000){
+  return Promise.race([
+    promise,
+    new Promise((_,reject)=> setTimeout(()=>reject(new Error('timeout')), ms))
+  ]);
+}
+
 async function hashPw(pw){
   const enc = new TextEncoder().encode(pw);
   const buf = await crypto.subtle.digest('SHA-256', enc);
@@ -1524,34 +1532,41 @@ async function applyPatches(){
 
 /* ============ INIT ============ */
 async function init(){
-  try{
-    const snap = await db.collection('hallSchedule').get();
-    if(snap.empty){
-      halls = SEED_HALLS;
-      const batch = db.batch();
-      halls.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
-      await batch.commit();
-    }else{
-      halls = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    }
-  }catch(e){ halls = SEED_HALLS; }
-
-  try{
-    const snap = await db.collection('matchingCodes').get();
-    if(snap.empty){
-      codes = SEED_CODES;
-      const batch = db.batch();
-      codes.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
-      await batch.commit();
-    }else{
-      codes = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    }
-  }catch(e){ codes = SEED_CODES; }
-
-  try{
-    const snap = await db.collection('prepChecklist').get();
-    checklists = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  }catch(e){ checklists = []; }
+  const [hallsResult, codesResult, checklistsResult] = await Promise.all([
+    (async ()=>{
+      try{
+        const snap = await withTimeout(db.collection('hallSchedule').get(), 10000);
+        if(snap.empty){
+          const batch = db.batch();
+          SEED_HALLS.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
+          await batch.commit();
+          return SEED_HALLS;
+        }
+        return snap.docs.map(d=>({id:d.id, ...d.data()}));
+      }catch(e){ return SEED_HALLS; }
+    })(),
+    (async ()=>{
+      try{
+        const snap = await withTimeout(db.collection('matchingCodes').get(), 10000);
+        if(snap.empty){
+          const batch = db.batch();
+          SEED_CODES.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
+          await batch.commit();
+          return SEED_CODES;
+        }
+        return snap.docs.map(d=>({id:d.id, ...d.data()}));
+      }catch(e){ return SEED_CODES; }
+    })(),
+    (async ()=>{
+      try{
+        const snap = await withTimeout(db.collection('prepChecklist').get(), 10000);
+        return snap.docs.map(d=>({id:d.id, ...d.data()}));
+      }catch(e){ return []; }
+    })(),
+  ]);
+  halls = hallsResult;
+  codes = codesResult;
+  checklists = checklistsResult;
 
   await applyPatches();
 
@@ -1902,7 +1917,9 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
     halls.push(newEntry);
   }
 
-  const ok = await saveHalls();
+  let ok;
+  try{ ok = await withTimeout(saveHalls(), 15000); }
+  catch(e){ ok = false; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
 
@@ -2021,7 +2038,9 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
     codes.push(newEntry);
   }
 
-  const ok = await saveCodes();
+  let ok;
+  try{ ok = await withTimeout(saveCodes(), 15000); }
+  catch(e){ ok = false; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
 
@@ -2160,7 +2179,9 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
     checklists.push(newEntry);
   }
 
-  const ok = await saveChecklists();
+  let ok;
+  try{ ok = await withTimeout(saveChecklists(), 15000); }
+  catch(e){ ok = false; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
 
