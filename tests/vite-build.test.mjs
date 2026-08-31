@@ -265,11 +265,17 @@ test('bugfix: the matching-code list table does not cause horizontal scroll on n
   assert.match(codesView, /class="table-wrap code-table-wrap"/);
   assert.match(codesView, /class="list-table code-list-table"/);
 
+  // The 짝꿍코드 value itself was deliberately removed from the list view —
+  // it's only shown after tapping into the detail modal — so the table
+  // should only have 3 columns (vendor/category/sharer) now.
+  assert.match(codesView, /<thead><tr><th>업체명<\/th><th>카테고리<\/th><th>공유자<\/th><\/tr><\/thead>/);
+  const rowMarkup = codesView.slice(codesView.indexOf('const rows = list.map'), codesView.indexOf('const footer ='));
+  assert.doesNotMatch(rowMarkup, /item\.code/);
+
   const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
   assert.match(css, /\.code-table-wrap\{\s*overflow-x:hidden;\s*\}/);
   assert.match(css, /table\.code-list-table\{\s*table-layout:fixed;\s*white-space:normal;\s*\}/);
-  // all four columns (vendor/category/sharer/code) should have explicit widths
-  for(let column = 1; column <= 4; column++){
+  for(let column = 1; column <= 3; column++){
     assert.match(css, new RegExp(`table\\.code-list-table td:nth-child\\(${column}\\)\\{\\s*width:`));
   }
 });

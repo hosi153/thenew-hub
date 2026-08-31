@@ -141,13 +141,13 @@ export function renderCodes(){
 
   const rows = list.map(item=>`<tr class="rowitem" role="button" tabindex="0" data-action="code-detail" data-id="${escapeAttr(item.id)}">
     <td><b>${escapeHtml(item.vendor)}</b></td><td><span class="hall-badge">${escapeHtml(item.category)}</span></td>
-    <td>${escapeHtml(item.sharer)}</td><td>${escapeHtml(item.code)}</td></tr>`).join('');
+    <td>${escapeHtml(item.sharer)}</td></tr>`).join('');
   const footer = page.error
     ? `<div class="empty">${escapeHtml(page.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadCodes()">다시 시도</button></div>`
     : (!needsFullData && page.hasMore)
     ? `<div class="loading" id="codeLoadMoreSentinel">${page.loading ? '더 불러오는 중...' : ''}</div>` : '';
   const html = `<div class="table-wrap code-table-wrap"><table class="list-table code-list-table">
-    <thead><tr><th>업체명</th><th>카테고리</th><th>공유자</th><th>짝꿍코드</th></tr></thead>
+    <thead><tr><th>업체명</th><th>카테고리</th><th>공유자</th></tr></thead>
     <tbody>${rows}</tbody></table></div>${footer}`;
   element.innerHTML = html;
 }
