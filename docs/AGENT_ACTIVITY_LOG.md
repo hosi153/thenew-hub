@@ -85,3 +85,39 @@
 **배포 상태 변화 없음**: GitHub Pages는 여전히 루트 `index.html`을 그대로 서빙 중. 이번 작업으로 추가된 `dist/`, `node_modules/`는 `.gitignore`에 등록되어 저장소에 커밋되지 않음(빌드 결과물이므로).
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+### 3단계 착수 (같은 날짜) — 기능 모듈화 (부분 진행, 진행 중)
+
+**사용자 지시**: "ㄱㄱㄱ" → 로드맵 3단계(기능 모듈화) 착수.
+
+**전략**: 3단계는 계획 문서 자체가 "가장 위험한 단계"로 지목한 작업(전역 실행 순서 변경 위험)이라, **가장 독립적이고 위험도 낮은 공통 모듈부터** 먼저 떼어내고, 여러 기능이 전역 배열(halls/codes/checklists)을 공유하며 얽혀있는 화면별 CRUD/렌더링 로직은 이번 라운드에서 보류. web/ 병행 구축 원칙(운영 index.html 미변경)은 계속 유지.
+
+**이번 라운드에서 분리 완료된 모듈** (원본 텍스트를 그대로 이동, 내용 변경 없음):
+
+| 모듈 | 줄 수 | 내용 |
+|---|---|---|
+| web/src/config/firebase.js | 24 | firebaseConfig, firebase.initializeApp, db 초기화, 롱폴링 설정 |
+| web/src/security/password.js | 43 | hashPwLegacy/derivePwHash/PW_ITERATIONS/createPasswordFields/matchesItemPassword/ADMIN_PW_HASH/authenticateItem |
+| web/src/data/firestore-rest.js | 207 | SDK+REST 폴백 전송 계층 전체 (writeWithFallback/deleteWithFallback/mergeWithFallback/readWithFallback/withTimeout/firestoreRestList 등) |
+| web/src/ui/toast.js | 10 | toast() — 기존에 window._toastTimer로 전역을 오염시키던 부분을 모듈 스코프 변수로 정리 |
+| web/src/ui/modal.js | 58 | showOverlay/hideOverlay/askPassword/cancelPwPrompt/submitPwPrompt/verify() |
+
+web/src/main.js는 1830줄 → 1523줄로 축소(약 17% 감소), 남은 부분은 홀 일정/짝꿍코드/체크리스트/캘린더/네비게이션 등 화면별 로직.
+
+**검증 절차** (각 모듈 분리마다 반복):
+1. 원본에서 정확한 라인 범위를 스크립트로 추출(수기 재입력 없음 → 오타/누락 방지)
+2. 외부에서 참조하는 함수만 골라 export 표시, 나머지는 모듈 내부로 은닉
+3. import 문으로 교체 후 npm run build 성공 확인
+4. 빌드된 결과물을 로컬 서버로 실제 서빙해서 특정 로직(PBKDF2 등) 존재를 문자열 검색으로 확인
+5. node --test tests/*.test.mjs 실행 — 매 단계 19개 테스트 전부 통과
+
+**작업 중 발견하고 수정한 실수**: 모달 모듈 추출 과정에서 import { toast }와 pwInput keydown 리스너를 실수로 중복 삽입 → 직접 재확인하며 발견해서 제거.
+
+**남은 작업 (다음 라운드)**:
+- 홀 일정(schedule) / 짝꿍코드(codes) / 체크리스트(checklist) 각각을 api·state·view 모듈로 분리
+- 인라인 onclick/oninput/onchange를 이벤트 위임 방식으로 교체 (현재는 여전히 32개 함수를 window에 노출하는 임시 방편 사용 중)
+- 전역 상태(halls/codes/checklists/hallFilter/showPast 등)를 기능별 상태 객체로 제한
+
+**검증 한계**: 이번에도 실제 브라우저에서의 시각적/동작 검증은 못함. 정적 빌드·문자열 검색·기존 테스트 통과까지만 확인.
+
+**커밋**: (아래 실제 커밋 해시로 갱신)
