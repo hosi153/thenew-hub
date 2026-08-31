@@ -56,3 +56,11 @@ test('hall schedule uses separate mobile-safe date and time controls', () => {
   assert.match(html, /@media \(max-width:420px\)[\s\S]*?\.datetime-fields\{ grid-template-columns:minmax\(0,1fr\); \}/);
   assert.match(appScript, /const datetime = date && time \? `\$\{date\}T\$\{time\}` : '';/);
 });
+
+test('calendar is the default hall schedule view', () => {
+  assert.match(html, /id="viewToggleCal"[^>]*class="[^"]*active|class="[^"]*active[^"]*"[^>]*id="viewToggleCal"/);
+  assert.match(html, /id="viewToggleCal"[^>]*aria-pressed="true"/);
+  assert.match(html, /id="hallListView"[^>]*style="display:none;"/);
+  assert.match(appScript, /let hallView = 'calendar';/);
+  assert.match(appScript, /classList\.contains\('active'\) && hallView==='calendar'\) renderCalendar\(\)/);
+});

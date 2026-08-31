@@ -540,11 +540,11 @@
     <p class="section-sub">홀별 예식 일정을 확인하고, 본인 일정을 직접 등록해주세요.</p>
 
     <div class="view-toggle">
-      <button class="chip active" id="viewToggleList" aria-pressed="true" onclick="setHallView('list')">목록</button>
-      <button class="chip" id="viewToggleCal" aria-pressed="false" onclick="setHallView('calendar')">달력</button>
+      <button class="chip" id="viewToggleList" aria-pressed="false" onclick="setHallView('list')">목록</button>
+      <button class="chip active" id="viewToggleCal" aria-pressed="true" onclick="setHallView('calendar')">달력</button>
     </div>
 
-    <div id="hallListView">
+    <div id="hallListView" style="display:none;">
       <input class="search" id="hallSearch" aria-label="일정 코드 검색" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="renderHalls()">
       <div class="chiprow" id="hallChips"></div>
       <label class="past-toggle">
@@ -554,7 +554,7 @@
       <div id="hallList"><div class="loading">불러오는 중...</div></div>
     </div>
 
-    <div id="hallCalendarView" style="display:none;">
+    <div id="hallCalendarView">
       <div class="cal-nav">
         <button aria-label="이전 달" onclick="calShiftMonth(-1)">‹</button>
         <div class="cal-title" id="calTitle"></div>
@@ -1287,7 +1287,10 @@ function forceRerenderIfReady(){
   if(halls && halls.length){
     try{
       renderHallChips(); renderCodeChips();
-      renderHalls(); renderCodes(); renderChecklistList();
+      const hallsPageActive = document.getElementById('page-halls').classList.contains('active');
+      if(hallsPageActive && hallView==='calendar') renderCalendar();
+      else renderHalls();
+      renderCodes(); renderChecklistList();
     }catch(e){ console.error('forceRerenderIfReady failed:', e); }
   }
 }
@@ -1895,6 +1898,7 @@ async function init(){
     renderHalls();
     renderCodes();
     renderChecklistList();
+    if(document.getElementById('page-halls').classList.contains('active') && hallView==='calendar') renderCalendar();
     if(isUsingSeedFallback) toast('실시간 데이터 연결에 실패해 기본 데이터를 표시하고 있어요.', 6000);
   }catch(e){
     console.error('render failed:', e);
@@ -2127,7 +2131,7 @@ function renderHalls(){
 }
 
 /* ---------- View toggle (list / calendar) ---------- */
-let hallView = 'list';
+let hallView = 'calendar';
 function setHallView(v){
   hallView = v;
   document.getElementById('viewToggleList').classList.toggle('active', v==='list');
