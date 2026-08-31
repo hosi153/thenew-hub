@@ -64,3 +64,13 @@ test('calendar is the default hall schedule view', () => {
   assert.match(appScript, /let hallView = 'calendar';/);
   assert.match(appScript, /classList\.contains\('active'\) && hallView==='calendar'\) renderCalendar\(\)/);
 });
+
+test('Miyu Snap partner entry and 2027 packages are present', () => {
+  assert.match(html, /data-partner="miyu"/);
+  assert.match(html, /id="partner-miyu"/);
+  assert.match(html, /미유스냅/);
+  assert.match(html, /https:\/\/open\.kakao\.com\/o\/sB6PHYWg/);
+  assert.match(html, /스탠다드 30만원 · 프리미엄 35만원/);
+  assert.match(html, /<h3>18만원<\/h3>/);
+  assert.match(html, /<h3>22만원<\/h3>/);
+});
