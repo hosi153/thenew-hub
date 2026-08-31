@@ -241,6 +241,7 @@
     width:100%; padding:12px 13px; border-radius:var(--radius-md); border:1px solid var(--border);
     font-size:16px; font-family:inherit; background:var(--surface-input); color:var(--ink);
   }
+  .field input[type="date"], .field input[type="time"]{ min-height:46px; box-sizing:border-box; }
   .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--accent); }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .modal .actions{ display:flex; gap:10px; margin-top:18px; }
@@ -1019,10 +1020,8 @@
       </div>
       <div class="field">
         <label>예식 날짜 · 시간 <span class="req">*</span></label>
-        <div class="row2">
-          <input type="date" id="h_date" required>
-          <input type="time" id="h_time" required>
-        </div>
+        <input type="date" id="h_date" required style="margin-bottom:10px;">
+        <input type="time" id="h_time" required>
       </div>
       <div class="field">
         <label>메모</label>
@@ -1917,6 +1916,11 @@ function renderCalendar(){
     cells += `<div class="${cls}" onclick="calSelectDate('${key}')">${day}<div class="cal-dots">${dots}</div></div>`;
   }
   document.getElementById('calGrid').innerHTML = cells;
+  // Force a reflow: WebKit sometimes fails to extend a backdrop-filter'd
+  // container's background/border-radius when its height grows dynamically
+  // (e.g. a 6-week month vs a 5-week one), leaving the last row visually
+  // outside the card.
+  void document.getElementById('calGrid').offsetHeight;
 
   if(calSelectedDate) renderCalDayList(calSelectedDate, byDate[calSelectedDate]||[]);
   else document.getElementById('calDayList').innerHTML = '';
