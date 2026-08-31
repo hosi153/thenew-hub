@@ -25,6 +25,7 @@ import { matchingCodeState } from './features/codes/state.js';
 import {
   closeCodeDetail,
   closeCodeModal,
+  handleCodeSearchInput,
   initializeMatchingCodes,
   loadMoreCodes,
   openCodeDetail,
@@ -42,6 +43,7 @@ import {
   calShiftMonth,
   closeHallDetail,
   closeHallModal,
+  handleHallSearchInput,
   initializeSchedules,
   loadMoreHalls,
   openHallDetail,
@@ -578,6 +580,8 @@ window.closePartner = closePartner;
 window.closeSub = closeSub;
 window.copyChecklist = copyChecklist;
 window.go = go;
+window.handleCodeSearchInput = handleCodeSearchInput;
+window.handleHallSearchInput = handleHallSearchInput;
 window.loadMyChecklist = loadMyChecklist;
 window.openAddModal = openAddModal;
 window.openChecklistEntry = openChecklistEntry;

@@ -1,6 +1,7 @@
 import { createPasswordFields } from '../../security/password.js';
 import { hideOverlay, showOverlay, verify } from '../../ui/modal.js';
 import { toast } from '../../ui/toast.js';
+import { debounce } from '../../ui/debounce.js';
 import { withTimeout } from '../../data/firestore-rest.js';
 import {
   createScheduleId,
@@ -23,6 +24,7 @@ import {
 
 const PAGE_SIZE = 20;
 const HALL_COLORS = { '제니스홀':'#3355FF', '더뉴홀':'#D98F2B', '르노브홀':'#C2447A' };
+let lastHallListHtml = null;
 
 function escapeHtml(value){
   const div = document.createElement('div');
@@ -194,11 +196,21 @@ export function renderHalls(){
     ? `<div class="empty">${escapeHtml(page.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadHalls()">다시 시도</button></div>`
     : (!needsFullData && page.hasMore)
     ? `<div class="loading" id="hallLoadMoreSentinel">${page.loading ? '더 불러오는 중...' : ''}</div>` : '';
-  element.innerHTML = `<div class="table-wrap hall-table-wrap"><table class="list-table hall-list-table">
+  const html = `<div class="table-wrap hall-table-wrap"><table class="list-table hall-list-table">
     <thead><tr><th>코드</th><th>홀</th><th>일정</th></tr></thead><tbody>${rows}</tbody>
   </table></div>${footer}`;
+  // Skip the DOM write entirely when the computed markup hasn't actually
+  // changed (e.g. a re-render triggered by an unrelated state change) —
+  // avoids a full list reflow/repaint for no visible difference.
+  if(html !== lastHallListHtml){
+    lastHallListHtml = html;
+    element.innerHTML = html;
+  }
   renderHomeWeek();
 }
+/* Debounced so typing in the search box doesn't rebuild the whole list on
+   every keystroke — only once input has paused for a moment. */
+export const handleHallSearchInput = debounce(() => renderHalls(), 150);
 
 export function setHallView(view){
   scheduleState.view = view;

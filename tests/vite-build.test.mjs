@@ -144,3 +144,75 @@ test('stage 4: required Firestore composite/range indexes are documented', () =>
   assert.match(content, /matchingCodes/);
   assert.match(content, /datetime/);
 });
+
+test('stage 5: search inputs are debounced instead of re-rendering on every keystroke', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /id="hallSearch"[^>]*oninput="handleHallSearchInput\(\)"/);
+  assert.match(webHtml, /id="codeSearch"[^>]*oninput="handleCodeSearchInput\(\)"/);
+
+  const debounceUtil = readFileSync(join(root, 'web', 'src', 'ui', 'debounce.js'), 'utf8');
+  assert.match(debounceUtil, /export function debounce\(fn, wait = 150\)/);
+
+  const scheduleView = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'view.js'), 'utf8');
+  const codesView = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'view.js'), 'utf8');
+  assert.match(scheduleView, /from '\.\.\/\.\.\/ui\/debounce\.js'/);
+  assert.match(scheduleView, /export const handleHallSearchInput = debounce\(/);
+  assert.match(codesView, /from '\.\.\/\.\.\/ui\/debounce\.js'/);
+  assert.match(codesView, /export const handleCodeSearchInput = debounce\(/);
+});
+
+test('stage 5: list renders skip redundant DOM writes when markup is unchanged', () => {
+  const scheduleView = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'view.js'), 'utf8');
+  const codesView = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'view.js'), 'utf8');
+  const checklistView = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
+
+  assert.match(scheduleView, /let lastHallListHtml = null;/);
+  assert.match(scheduleView, /if\(html !== lastHallListHtml\)/);
+  assert.match(codesView, /let lastCodeListHtml = null;/);
+  assert.match(codesView, /if\(html !== lastCodeListHtml\)/);
+  assert.match(checklistView, /let lastChecklistListHtml = null;/);
+  assert.match(checklistView, /if\(html !== lastChecklistListHtml\)/);
+});
+
+test('stage 5: calendar cache is only invalidated at genuine data-mutation points, not on every render', () => {
+  const scheduleView = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'view.js'), 'utf8');
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+
+  // resetScheduleCalendarCache() must NOT appear inside renderHalls() or
+  // renderCalendar() themselves — only around save/delete/full-load/patch
+  // completion, where the underlying data actually changed.
+  const renderHallsBody = scheduleView.slice(
+    scheduleView.indexOf('export function renderHalls()'),
+    scheduleView.indexOf('export const handleHallSearchInput'),
+  );
+  assert.doesNotMatch(renderHallsBody, /resetScheduleCalendarCache\(\)/);
+
+  const renderCalendarBody = scheduleView.slice(
+    scheduleView.indexOf('export async function renderCalendar()'),
+    scheduleView.indexOf('export function calSelectDate'),
+  );
+  assert.doesNotMatch(renderCalendarBody, /resetScheduleCalendarCache\(\)/);
+
+  // It *should* be called after data-mutating operations.
+  const callSites = [...scheduleView.matchAll(/resetScheduleCalendarCache\(\);/g)].length
+    + [...main.matchAll(/resetScheduleCalendarCache\(\);/g)].length;
+  assert.ok(callSites >= 3, `expected calendar cache invalidation at save/delete/patch sites, found ${callSites}`);
+});
+
+test('stage 5: virtual scrolling decision is documented with a re-evaluation trigger', () => {
+  const plan = readFileSync(join(root, 'docs', 'PERFORMANCE_REFACTORING_PLAN.md'), 'utf8');
+  assert.match(plan, /가상 스크롤 도입 여부 판단/);
+  assert.match(plan, /지금은 도입하지 않는다/);
+  assert.match(plan, /재검토 조건/);
+});
+
+test('stage 5: modal focus management, keyboard handling, and reduced-motion are covered', () => {
+  const modal = readFileSync(join(root, 'web', 'src', 'ui', 'modal.js'), 'utf8');
+  assert.match(modal, /setAttribute\('aria-hidden','false'\)/);
+  assert.match(modal, /setAttribute\('aria-hidden','true'\)/);
+  assert.match(modal, /\.focus\(\)/);
+  assert.match(modal, /addEventListener\('keydown'/);
+
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  assert.match(css, /prefers-reduced-motion\s*:\s*reduce/);
+});

@@ -81,7 +81,7 @@
     </div>
 
     <div id="hallListView" style="display:none;">
-      <input class="search" id="hallSearch" aria-label="일정 코드 검색" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="renderHalls()">
+      <input class="search" id="hallSearch" aria-label="일정 코드 검색" placeholder="코드(닉네임)로 검색..." autocomplete="off" oninput="handleHallSearchInput()">
       <div class="chiprow" id="hallChips"></div>
       <label class="past-toggle">
         <input type="checkbox" id="showPastToggle" onchange="setShowPast(this.checked)">
@@ -111,7 +111,7 @@
     <div class="kicker">REFERRAL CODE</div><div class="section-title">짝꿍코드</div>
     <p class="section-sub">먼저 계약한 분들의 짝꿍코드를 확인하고, 본인 것도 등록해주세요.</p>
 
-    <input class="search" id="codeSearch" aria-label="짝꿍코드 검색" placeholder="업체명 / 닉네임으로 검색..." autocomplete="off" oninput="renderCodes()">
+    <input class="search" id="codeSearch" aria-label="짝꿍코드 검색" placeholder="업체명 / 닉네임으로 검색..." autocomplete="off" oninput="handleCodeSearchInput()">
     <div class="chiprow" id="codeChips"></div>
 
     <div id="codeList"><div class="loading">불러오는 중...</div></div>

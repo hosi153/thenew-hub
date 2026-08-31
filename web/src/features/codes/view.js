@@ -2,6 +2,7 @@ import { withTimeout } from '../../data/firestore-rest.js';
 import { createPasswordFields } from '../../security/password.js';
 import { hideOverlay, showOverlay, verify } from '../../ui/modal.js';
 import { toast } from '../../ui/toast.js';
+import { debounce } from '../../ui/debounce.js';
 import {
   createMatchingCodeId,
   deleteMatchingCode,
@@ -18,6 +19,7 @@ import {
 } from './state.js';
 
 const PAGE_SIZE = 20;
+let lastCodeListHtml = null;
 
 function escapeHtml(value){
   const div = document.createElement('div');
@@ -145,10 +147,18 @@ export function renderCodes(){
     ? `<div class="empty">${escapeHtml(page.error)}<br><button type="button" class="btn btn-outline btn-sm" onclick="retryLoadCodes()">다시 시도</button></div>`
     : (!needsFullData && page.hasMore)
     ? `<div class="loading" id="codeLoadMoreSentinel">${page.loading ? '더 불러오는 중...' : ''}</div>` : '';
-  element.innerHTML = `<div class="table-wrap"><table class="list-table">
+  const html = `<div class="table-wrap"><table class="list-table">
     <thead><tr><th>업체명</th><th>카테고리</th><th>공유자</th><th>짝꿍코드</th></tr></thead>
     <tbody>${rows}</tbody></table></div>${footer}`;
+  // Skip the DOM write when the computed markup is unchanged from last time.
+  if(html !== lastCodeListHtml){
+    lastCodeListHtml = html;
+    element.innerHTML = html;
+  }
 }
+/* Debounced so typing in the search box doesn't rebuild the whole list on
+   every keystroke — only once input has paused for a moment. */
+export const handleCodeSearchInput = debounce(() => renderCodes(), 150);
 
 export function openCodeDetail(id){
   matchingCodeState.viewingId = id;
