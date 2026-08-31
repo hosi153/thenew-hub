@@ -426,6 +426,7 @@
     color:#fff; padding:10px 18px; border-radius:var(--radius-pill); font-size:12.5px;
     z-index:100; opacity:0; pointer-events:none; transition:all .25s ease;
     border:1px solid rgba(255,255,255,0.14);
+    max-width:min(90vw, 420px); text-align:center; word-break:break-word;
   }
   .status-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -1604,8 +1605,8 @@ async function saveHalls(){
     halls.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
     remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('hallSchedule').doc(id)) );
     await batch.commit();
-    return true;
-  }catch(e){ console.error('saveHalls failed:', e); return false; }
+    return {ok:true};
+  }catch(e){ console.error('saveHalls failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
 }
 async function saveCodes(){
   try{
@@ -1616,14 +1617,15 @@ async function saveCodes(){
     codes.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
     remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('matchingCodes').doc(id)) );
     await batch.commit();
-    return true;
-  }catch(e){ console.error('saveCodes failed:', e); return false; }
+    return {ok:true};
+  }catch(e){ console.error('saveCodes failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
 }
 
-function toast(msg){
+function toast(msg, ms){
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 1800);
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), ms || 1800);
 }
 
 /* ============ NAV ============ */
@@ -1934,20 +1936,20 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
     halls.push(newEntry);
   }
 
-  let ok;
-  try{ ok = await withTimeout(saveHalls(), 15000); }
-  catch(e){ ok = false; }
+  let result;
+  try{ result = await withTimeout(saveHalls(), 15000); }
+  catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
 
-  if(!ok){
+  if(!result.ok){
     if(editingHallId){
       const idx = halls.findIndex(x=>x.id===editingHallId);
       if(idx>-1) halls[idx] = backup;
     }else if(newEntry){
       halls = halls.filter(x=>x.id!==newEntry.id);
     }
-    toast('저장에 실패했어요. 네트워크 확인 후 다시 시도해주세요');
+    toast('저장 실패: ' + (result.error || '알 수 없는 오류'), 6000);
     return;
   }
 
@@ -2055,20 +2057,20 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
     codes.push(newEntry);
   }
 
-  let ok;
-  try{ ok = await withTimeout(saveCodes(), 15000); }
-  catch(e){ ok = false; }
+  let result;
+  try{ result = await withTimeout(saveCodes(), 15000); }
+  catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
 
-  if(!ok){
+  if(!result.ok){
     if(editingCodeId){
       const idx = codes.findIndex(x=>x.id===editingCodeId);
       if(idx>-1) codes[idx] = backup;
     }else if(newEntry){
       codes = codes.filter(x=>x.id!==newEntry.id);
     }
-    toast('저장에 실패했어요. 네트워크 확인 후 다시 시도해주세요');
+    toast('저장 실패: ' + (result.error || '알 수 없는 오류'), 6000);
     return;
   }
 
@@ -2087,8 +2089,8 @@ async function saveChecklists(){
     checklists.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('prepChecklist').doc(id), data); });
     remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('prepChecklist').doc(id)) );
     await batch.commit();
-    return true;
-  }catch(e){ console.error('saveChecklists failed:', e); return false; }
+    return {ok:true};
+  }catch(e){ console.error('saveChecklists failed:', e); return {ok:false, error: (e && (e.code || e.message)) || String(e)}; }
 }
 
 /* ---- build the input rows once (static template) ---- */
@@ -2196,13 +2198,13 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
     checklists.push(newEntry);
   }
 
-  let ok;
-  try{ ok = await withTimeout(saveChecklists(), 15000); }
-  catch(e){ ok = false; }
+  let result;
+  try{ result = await withTimeout(saveChecklists(), 15000); }
+  catch(e){ result = {ok:false, error: e && e.message==='timeout' ? 'timeout' : String(e)}; }
 
   if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
 
-  if(!ok){
+  if(!result.ok){
     // roll back the optimistic local change so the UI doesn't show a phantom "saved" entry
     if(editingChecklistId){
       const idx = checklists.findIndex(x=>x.id===editingChecklistId);
@@ -2210,7 +2212,7 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
     }else if(newEntry){
       checklists = checklists.filter(x=>x.id!==newEntry.id);
     }
-    toast('저장에 실패했어요. 네트워크 확인 후 다시 시도해주세요');
+    toast('저장 실패: ' + (result.error || '알 수 없는 오류'), 6000);
     return; // keep the modal open so nothing typed is lost
   }
 
