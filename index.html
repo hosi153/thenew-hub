@@ -1572,7 +1572,8 @@ async function saveHalls(){
     halls.forEach(h=>{ const {id, ...data} = h; batch.set(db.collection('hallSchedule').doc(id), data); });
     remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('hallSchedule').doc(id)) );
     await batch.commit();
-  }catch(e){ toast('저장 중 문제가 발생했어요'); }
+    return true;
+  }catch(e){ console.error('saveHalls failed:', e); return false; }
 }
 async function saveCodes(){
   try{
@@ -1583,7 +1584,8 @@ async function saveCodes(){
     codes.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('matchingCodes').doc(id), data); });
     remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('matchingCodes').doc(id)) );
     await batch.commit();
-  }catch(e){ toast('저장 중 문제가 발생했어요'); }
+    return true;
+  }catch(e){ console.error('saveCodes failed:', e); return false; }
 }
 
 function toast(msg){
@@ -1885,15 +1887,36 @@ document.getElementById('hallForm').addEventListener('submit', async (e)=>{
   const memo = document.getElementById('h_memo').value.trim();
   const datetime = (date && time) ? `${date}T${time}` : '';
 
+  const submitBtn = document.querySelector('#hallForm button[type="submit"]');
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
+
+  let backup = null, newEntry = null;
   if(editingHallId){
     const idx = halls.findIndex(x=>x.id===editingHallId);
+    backup = {...halls[idx]};
     halls[idx] = {...halls[idx], code, hall, datetime, memo};
   }else{
     const pw = document.getElementById('h_password').value;
     const pwHash = await hashPw(pw);
-    halls.push({id:'h_'+Date.now(), code, hall, datetime, memo, pwHash});
+    newEntry = {id:'h_'+Date.now(), code, hall, datetime, memo, pwHash};
+    halls.push(newEntry);
   }
-  await saveHalls();
+
+  const ok = await saveHalls();
+
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
+
+  if(!ok){
+    if(editingHallId){
+      const idx = halls.findIndex(x=>x.id===editingHallId);
+      if(idx>-1) halls[idx] = backup;
+    }else if(newEntry){
+      halls = halls.filter(x=>x.id!==newEntry.id);
+    }
+    toast('저장에 실패했어요. 네트워크 확인 후 다시 시도해주세요');
+    return;
+  }
+
   closeHallModal();
   renderHalls();
   toast('저장되었습니다');
@@ -1983,15 +2006,36 @@ document.getElementById('codeForm').addEventListener('submit', async (e)=>{
   const sharer = document.getElementById('c_sharer').value.trim();
   const code = document.getElementById('c_code').value.trim();
 
+  const submitBtn = document.querySelector('#codeForm button[type="submit"]');
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
+
+  let backup = null, newEntry = null;
   if(editingCodeId){
     const idx = codes.findIndex(x=>x.id===editingCodeId);
+    backup = {...codes[idx]};
     codes[idx] = {...codes[idx], vendor, category, sharer, code};
   }else{
     const pw = document.getElementById('c_password').value;
     const pwHash = await hashPw(pw);
-    codes.push({id:'c_'+Date.now(), vendor, category, sharer, code, pwHash});
+    newEntry = {id:'c_'+Date.now(), vendor, category, sharer, code, pwHash};
+    codes.push(newEntry);
   }
-  await saveCodes();
+
+  const ok = await saveCodes();
+
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
+
+  if(!ok){
+    if(editingCodeId){
+      const idx = codes.findIndex(x=>x.id===editingCodeId);
+      if(idx>-1) codes[idx] = backup;
+    }else if(newEntry){
+      codes = codes.filter(x=>x.id!==newEntry.id);
+    }
+    toast('저장에 실패했어요. 네트워크 확인 후 다시 시도해주세요');
+    return;
+  }
+
   closeCodeModal();
   renderCodes();
   toast('저장되었습니다');
