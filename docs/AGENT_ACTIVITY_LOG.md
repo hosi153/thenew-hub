@@ -274,3 +274,35 @@ web/src/main.js는 1830줄 → 1523줄로 축소(약 17% 감소), 남은 부분�
 - 다음 에이전트는 `git diff --check`, `npm test`, `node --test tests/vite-build.test.mjs`, `npm run build`로 시작 상태를 확인할 것
 
 **커밋**: 미생성 (사용자 지시 없이 커밋하지 않음)
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — Codex 로컬 작업 리뷰
+
+**배경**: 사용자가 Codex(다른 로컬 에이전트, `/Users/choihogyun/Documents/Codex/.../work/repo`)를 통해 로컬에서 일정(schedule)·짝꿍코드(codes) 기능 모듈화를 이어서 진행. 사용자가 `git add -A && git commit && git push` 명령을 직접 실행해 반영(커밋 `315d951`).
+
+### 리뷰 절차 및 결과
+1. `git fetch origin main` → `315d951` 확인, `git pull`로 로컬 동기화
+2. `npm install && npm run build` → **성공**, 15개 모듈 변환, 산출물 크기 안정적(CSS 19.93kB, JS 50.31kB)
+3. `node --test tests/*.test.mjs` → **21/21 전부 통과** (기존 19개 + Codex가 추가한 schedule/codes 구조 검증 테스트 2개)
+4. 코드 리뷰로 확인한 것:
+   - `halls`/`codes` 전역 배열이 `scheduleState.items` / `matchingCodeState.items` 객체로 정확히 캡슐화됨 (계획 문서 3단계 목표인 "전역 상태를 기능별 상태 객체로 제한"에 부합)
+   - 이전에 이 에이전트(Claude)가 만든 `applyPatches()`가 새 상태 구조(`scheduleState.items`/`matchingCodeState.items`)에 맞게 정확히 재배선됨
+   - 오히려 개선점 발견: 패치 적용 실패 시 `applied` 목록에 잘못 기록되지 않도록 `newlyApplied` 별도 추적 추가, `firebase.firestore.FieldValue.arrayUnion()`으로 동시 쓰기 안전성 확보 (기존엔 전체 배열을 덮어쓰는 `set()` 방식이었음)
+   - 인라인 `onclick` 핸들러용 `window.함수명 = 함수명` 노출 패턴은 그대로 유지됨 (Claude가 만든 안전장치를 그대로 존중)
+   - 일부 신규 행(예: 체크리스트 목록 행)은 `data-action`/`data-id` 속성 기반 이벤트 위임으로 전환되어 있음 — 계획 문서 3단계의 "인라인 핸들러를 이벤트 위임으로 교체" 항목도 부분적으로 진행 중
+5. `git status --short` → **비어 있음** (운영 루트 `index.html`은 이번에도 전혀 변경되지 않음, 안전 원칙 계속 유지 확인)
+
+### Codex 로그에서 확인한 추가 검증 (Claude가 못했던 부분)
+Codex는 `vite preview` + 실제 인앱 브라우저로 다음을 직접 클릭 테스트함(Claude는 브라우저 없는 세션이라 이 부분 검증 불가):
+- 홈 → 짝꿍코드 탭 이동, 목록 렌더링
+- `스냅` 필터 선택 후 결과 렌더링
+- 상세 모달 열기/닫기
+- 등록 모달 열기/취소
+- 콘솔 에러 0건 확인
+- (운영 데이터 보호를 위해 실제 등록·수정·삭제 제출은 하지 않음 — 안전 원칙 일치)
+
+### 종합 평가
+Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변경, 단계별 커밋, 되돌릴 수 있는 단위)을 정확히 준수**했음. 두 에이전트가 별도 세션에서 작업했음에도 상태 관리 패턴이 일관되게 유지됨. 병합 충돌 없이 정상 반영 확인.
+
+### 다음 단계 (Codex 로그 인계 사항과 동일)
+- 체크리스트(checklist) 기능을 `api.js`/`state.js`/`view.js`로 분리 (schedule/codes와 동일 패턴)
+- 3개 기능 모두 자체 상태를 갖게 된 후, 인라인 이벤트 핸들러의 이벤트 위임 전환 마무리
