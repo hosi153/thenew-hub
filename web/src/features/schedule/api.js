@@ -1,46 +1,31 @@
 import { db } from '../../config/firebase.js';
-import {
-  deleteWithFallback,
-  firestoreRestList,
-  readWithFallback,
-  withTimeout,
-  writeWithFallback,
-} from '../../data/firestore-rest.js';
+import { createCollectionRepository } from '../../data/collection-repository.js';
+import { firestoreRestList, withTimeout } from '../../data/firestore-rest.js';
 
 const COLLECTION = 'hallSchedule';
+const repo = createCollectionRepository(COLLECTION);
 
-export async function scheduleCollectionIsEmpty(){
-  const snap = await withTimeout(db.collection(COLLECTION).limit(1).get(), 8000);
-  return snap.empty;
-}
-
-export async function seedSchedules(items){
-  const batch = db.batch();
-  items.forEach(item=>{
-    const {id, ...data} = item;
-    batch.set(db.collection(COLLECTION).doc(id), data);
-  });
-  await withTimeout(batch.commit(), 10000);
-}
+export const scheduleCollectionIsEmpty = () => repo.isEmpty();
+export const seedSchedules = (items) => repo.seed(items);
+export const loadAllSchedules = () => repo.loadAll();
+export const createScheduleId = () => repo.createId();
+export const saveSchedule = (id, data, onStatus) => repo.save(id, data, onStatus);
+export const deleteSchedule = (id, onStatus) => repo.delete(id, onStatus);
 
 export async function loadSchedulePage({ after, limit, from }){
-  let query = db.collection(COLLECTION).where('datetime','>=',from).orderBy('datetime').limit(limit);
-  if(after) query = query.startAfter(after);
-  const snap = await withTimeout(query.get(), 8000);
-  return {
-    items: snap.docs.map(doc=>({id:doc.id, ...doc.data()})),
-    lastDoc: snap.docs.length ? snap.docs[snap.docs.length-1] : after,
-    hasMore: snap.docs.length === limit,
-  };
+  return repo.loadPage({
+    after,
+    limit,
+    buildQuery: (collection) => collection.where('datetime','>=',from).orderBy('datetime'),
+  });
 }
 
+/* Schedule-specific query shapes that don't fit the generic repository
+   (undated items, and a single calendar month's range) stay here, still
+   using the shared db/transport helpers directly. */
 export async function loadUndatedSchedules(){
   const snap = await withTimeout(db.collection(COLLECTION).where('datetime','==','').get(), 8000);
   return snap.docs.map(doc=>({id:doc.id, ...doc.data()}));
-}
-
-export function loadAllSchedules(){
-  return readWithFallback(COLLECTION);
 }
 
 export async function loadScheduleMonth(start, end){
@@ -55,16 +40,4 @@ export async function loadScheduleMonth(start, end){
     const all = await firestoreRestList(COLLECTION);
     return all.filter(item=>item.datetime && item.datetime>=start && item.datetime<end);
   }
-}
-
-export function createScheduleId(){
-  return db.collection(COLLECTION).doc().id;
-}
-
-export function saveSchedule(id, data, onStatus){
-  return writeWithFallback(COLLECTION, id, data, onStatus);
-}
-
-export function deleteSchedule(id, onStatus){
-  return deleteWithFallback(COLLECTION, id, onStatus);
 }

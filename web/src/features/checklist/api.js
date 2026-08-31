@@ -1,20 +1,12 @@
-import { db } from '../../config/firebase.js';
-import { deleteWithFallback, readWithFallback, writeWithFallback } from '../../data/firestore-rest.js';
+import { createCollectionRepository } from '../../data/collection-repository.js';
 
 const COLLECTION = 'prepChecklist';
+const repo = createCollectionRepository(COLLECTION);
 
-export function loadAllChecklists(){
-  return readWithFallback(COLLECTION);
-}
-
-export function createChecklistId(){
-  return db.collection(COLLECTION).doc().id;
-}
-
-export function saveChecklist(id, data, onStatus){
-  return writeWithFallback(COLLECTION, id, data, onStatus);
-}
-
-export function deleteChecklist(id, onStatus){
-  return deleteWithFallback(COLLECTION, id, onStatus);
-}
+/* Checklist stays a small, non-paginated collection by design (one entry
+   per couple), so it only uses the non-paginated slice of the shared
+   repository — loadPage()/isEmpty()/seed() aren't needed here. */
+export const loadAllChecklists = () => repo.loadAll();
+export const createChecklistId = () => repo.createId();
+export const saveChecklist = (id, data, onStatus) => repo.save(id, data, onStatus);
+export const deleteChecklist = (id, onStatus) => repo.delete(id, onStatus);

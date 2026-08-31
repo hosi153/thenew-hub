@@ -97,3 +97,50 @@ test('stage 3 checklist feature owns its API, state, and view modules', () => {
   assert.match(view, /document\.getElementById\('checklistForm'\)\.addEventListener\('submit'/);
   assert.match(view, /const CHECKLIST_TEMPLATE = \[/);
 });
+
+test('stage 4: schedule, codes, and checklist share one collection-repository data layer', () => {
+  const repository = readFileSync(join(root, 'web', 'src', 'data', 'collection-repository.js'), 'utf8');
+  assert.match(repository, /export function createCollectionRepository\(collectionName\)/);
+  assert.match(repository, /isEmpty\(\)/);
+  assert.match(repository, /async seed\(items\)/);
+  assert.match(repository, /async loadPage\(/);
+  assert.match(repository, /async loadAll\(\)/);
+  assert.match(repository, /createId\(\)/);
+  assert.match(repository, /save\(id, data, onStatus\)/);
+  assert.match(repository, /delete\(id, onStatus\)/);
+
+  const scheduleApi = readFileSync(join(root, 'web', 'src', 'features', 'schedule', 'api.js'), 'utf8');
+  const codesApi = readFileSync(join(root, 'web', 'src', 'features', 'codes', 'api.js'), 'utf8');
+  const checklistApi = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'api.js'), 'utf8');
+
+  [scheduleApi, codesApi, checklistApi].forEach((source) => {
+    assert.match(source, /from '\.\.\/\.\.\/data\/collection-repository\.js'/);
+    assert.match(source, /createCollectionRepository\(COLLECTION\)/);
+  });
+
+  // Each feature's api.js should no longer hand-roll its own Firestore
+  // existence-check / batch-seed / save / delete logic — that now lives
+  // once in collection-repository.js.
+  [scheduleApi, codesApi, checklistApi].forEach((source) => {
+    assert.doesNotMatch(source, /db\.batch\(\)/);
+    assert.doesNotMatch(source, /writeWithFallback\(collectionName|writeWithFallback\(COLLECTION,/);
+  });
+});
+
+test('stage 4: loadAll() de-duplicates concurrent calls and caches the last result', () => {
+  const repository = readFileSync(join(root, 'web', 'src', 'data', 'collection-repository.js'), 'utf8');
+  assert.match(repository, /let inFlightLoadAll/);
+  assert.match(repository, /let lastLoadAllResult/);
+  assert.match(repository, /if\(inFlightLoadAll\) return inFlightLoadAll;/);
+  assert.match(repository, /if\(lastLoadAllResult\) return lastLoadAllResult\.slice\(\);/);
+  assert.match(repository, /invalidateLoadAllCache/);
+});
+
+test('stage 4: required Firestore composite/range indexes are documented', () => {
+  const indexDocsPath = join(root, 'docs', 'FIRESTORE_INDEXES.md');
+  assert.ok(existsSync(indexDocsPath), 'docs/FIRESTORE_INDEXES.md should exist');
+  const content = readFileSync(indexDocsPath, 'utf8');
+  assert.match(content, /hallSchedule/);
+  assert.match(content, /matchingCodes/);
+  assert.match(content, /datetime/);
+});

@@ -1,51 +1,20 @@
-import { db } from '../../config/firebase.js';
-import {
-  deleteWithFallback,
-  readWithFallback,
-  withTimeout,
-  writeWithFallback,
-} from '../../data/firestore-rest.js';
+import { createCollectionRepository } from '../../data/collection-repository.js';
 
 const COLLECTION = 'matchingCodes';
+const repo = createCollectionRepository(COLLECTION);
 
-export async function matchingCodeCollectionIsEmpty(){
-  const snap = await withTimeout(db.collection(COLLECTION).limit(1).get(), 8000);
-  return snap.empty;
-}
+export const matchingCodeCollectionIsEmpty = () => repo.isEmpty();
+export const seedMatchingCodes = (items) => repo.seed(items);
+export const loadAllMatchingCodes = () => repo.loadAll();
+export const createMatchingCodeId = () => repo.createId();
+export const saveMatchingCode = (id, data, onStatus) => repo.save(id, data, onStatus);
+export const deleteMatchingCode = (id, onStatus) => repo.delete(id, onStatus);
 
-export async function seedMatchingCodes(items){
-  const batch = db.batch();
-  items.forEach(item=>{
-    const {id, ...data} = item;
-    batch.set(db.collection(COLLECTION).doc(id), data);
-  });
-  await withTimeout(batch.commit(), 10000);
-}
-
-export async function loadMatchingCodePage({after, limit}){
+export async function loadMatchingCodePage({ after, limit }){
   /* global firebase */
-  let query = db.collection(COLLECTION).orderBy(firebase.firestore.FieldPath.documentId()).limit(limit);
-  if(after) query = query.startAfter(after);
-  const snap = await withTimeout(query.get(), 8000);
-  return {
-    items: snap.docs.map(doc=>({id:doc.id, ...doc.data()})),
-    lastDoc: snap.docs.length ? snap.docs[snap.docs.length-1] : after,
-    hasMore: snap.docs.length === limit,
-  };
-}
-
-export function loadAllMatchingCodes(){
-  return readWithFallback(COLLECTION);
-}
-
-export function createMatchingCodeId(){
-  return db.collection(COLLECTION).doc().id;
-}
-
-export function saveMatchingCode(id, data, onStatus){
-  return writeWithFallback(COLLECTION, id, data, onStatus);
-}
-
-export function deleteMatchingCode(id, onStatus){
-  return deleteWithFallback(COLLECTION, id, onStatus);
+  return repo.loadPage({
+    after,
+    limit,
+    buildQuery: (collection) => collection.orderBy(firebase.firestore.FieldPath.documentId()),
+  });
 }
