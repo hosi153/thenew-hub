@@ -431,8 +431,8 @@
 
   .loading{ text-align:center; padding:50px 10px; color:var(--ink-soft); font-size:13px; }
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js" defer></script>
 </head>
 <body>
 
@@ -1226,8 +1226,15 @@ const firebaseConfig = {
   messagingSenderId: "762300775329",
   appId: "1:762300775329:web:2f5e604fb199bf716729e0"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db;
+function startApp(){
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  init();
+}
+if(typeof firebase !== 'undefined'){ startApp(); }
+else{ document.addEventListener('DOMContentLoaded', startApp); }
+
 
 /* ============ SEED DATA (migrated from Notion) ============ */
 const SEED_HALLS = [
@@ -1576,7 +1583,6 @@ async function init(){
   renderCodes();
   renderChecklistList();
 }
-init();
 
 async function saveHalls(){
   try{
