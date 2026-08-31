@@ -330,3 +330,26 @@ Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변�
 **운영 영향**: 이번에도 루트 `index.html` 미변경, `git status`로 확인.
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — 6단계: GitHub Actions 자동 배포 전환
+
+**사용자 지시**: "6단계" → "ㄱ" 확인 후 진행.
+
+**작업 내용**:
+1. `.github/workflows/deploy.yml` 작성 — push to main 시 `npm ci` → `npm test`(22개 테스트) → `npm run build` → `dist/`를 GitHub Pages 아티팩트로 업로드 → 배포까지 자동화
+2. `package.json`의 `test` 스크립트를 `tests/static-review.test.mjs` 하나만 실행하던 것에서 `tests/*.test.mjs` 전체 실행으로 수정
+3. **인증 이슈 발생 및 해결**: `.github/workflows/` 하위 파일 push 시 `refusing to allow an OAuth App to create or update workflow ... without workflow scope` 오류 → `gh auth refresh -s workflow`로 디바이스 코드 재인증(사용자 승인), `workflow` 스코프 추가 획득 후 재시도 → 성공
+4. 워크플로 최초 실행 성공(build/deploy 모두 success)했으나, Pages 설정의 `build_type`이 여전히 `legacy`로 남아있는 것 발견 → `gh api -X PUT repos/hosi153/thenew-hub/pages -f build_type=workflow`로 명시적 전환
+5. 전환 후 워크플로 재실행(`workflow_dispatch`)하여 최종 확인
+
+**검증**:
+- Pages API: `build_type: "workflow"`, `status: "built"` 확인
+- Deployments API: 최신 배포의 `sha`가 push한 커밋(`9a49e14`)과 정확히 일치, `state: "success"` 확인
+- `web_fetch`로 실제 페이지 재조회 — 캘린더 모드, 체크리스트, 이번주 위젯, 날짜/시간 분리 입력, 신규 제휴업체까지 전부 정상 표시 확인
+- **한계**: 화면 렌더링 결과는 legacy/workflow 두 배포 방식이 의도적으로 동일하게 보이도록 설계돼 있어서, 화면 비교만으로는 어느 방식으로 서빙되는지 구분 불가 — 진짜 근거는 위의 API 메타데이터(build_type, 배포 커밋 SHA 일치)임. `github.io` 도메인이 이 세션의 bash 네트워크 허용 목록에 없어 curl로 raw HTML의 script 태그를 직접 대조하지는 못함(웹훅 도구 web_fetch는 마크다운 변환 결과만 제공하고, 임의 URL 직접 fetch는 "사전 검색/fetch 결과에 있어야 함" 제약으로 막힘)
+
+**남은 확인 사항**: 실제 등록/수정/삭제 같은 상호작용 동작은 사용자의 실기기 확인이 필요 — 요청해둠.
+
+**운영 영향**: 이번 단계부터는 의도적으로 실제 배포 방식을 변경함(핵심 목적). 문제 발생 시 `gh api -X PUT repos/hosi153/thenew-hub/pages -f build_type=legacy`로 즉시 원복 가능.
+
+**커밋**: `9a49e14` (워크플로 추가), Pages 설정 변경은 API로 직접 수행(별도 커밋 아님)

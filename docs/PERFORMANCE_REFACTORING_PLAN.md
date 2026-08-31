@@ -10,7 +10,7 @@
 | 3단계: 기능 모듈화 | ✅ 완료 | 공통 모듈 5개 + 일정(schedule)·짝꿍코드(codes)·체크리스트(checklist) api·state·view 전부 분리 완료. 인라인 핸들러는 window 노출 방식 + 일부 data-action 위임 혼용 중 |
 | 4단계: 데이터 접근 최적화 | ⬜ 미착수 | |
 | 5단계: 렌더링과 상호작용 최적화 | ⬜ 미착수 | |
-| 6단계: GitHub Pages 자동 배포 | ⬜ 미착수 | 이 단계 전까지는 `web/`·`dist/` 빌드가 실제 배포에 반영되지 않음. 여전히 운영 사이트는 루트 `index.html`을 그대로 서빙 |
+| 6단계: GitHub Pages 자동 배포 | ✅ 완료 | GitHub Actions 워크플로(.github/workflows/deploy.yml)로 전환, Pages build_type을 workflow로 변경. 배포 성공 확인(state:success). 이제 web/ -> npm run build -> dist/ 결과물이 실제 서빙됨 |
 
 세부 작업 이력은 `docs/AGENT_ACTIVITY_LOG.md`를 참고하세요.
 
@@ -193,7 +193,7 @@ tests/
 - 동일 상태 재렌더링 시 불필요한 네트워크 요청과 전체 DOM 교체가 없다.
 - 모바일 접근성과 가로 넘침 테스트가 통과한다.
 
-### 6단계: GitHub Pages 자동 배포 — ⬜ 미착수
+### 6단계: GitHub Pages 자동 배포 — ✅ 완료
 
 - GitHub Actions에서 설치, 테스트, 빌드 후 `dist/`만 Pages에 배포한다.
 - pull request에서는 테스트와 빌드만 실행하고 `main` 반영 시 배포한다.
