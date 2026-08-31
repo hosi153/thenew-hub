@@ -2007,7 +2007,8 @@ async function saveChecklists(){
     checklists.forEach(c=>{ const {id, ...data} = c; batch.set(db.collection('prepChecklist').doc(id), data); });
     remoteIds.filter(id=>!localIds.includes(id)).forEach(id=> batch.delete(db.collection('prepChecklist').doc(id)) );
     await batch.commit();
-  }catch(e){ toast('저장 중 문제가 발생했어요'); }
+    return true;
+  }catch(e){ console.error('saveChecklists failed:', e); return false; }
 }
 
 /* ---- build the input rows once (static template) ---- */
@@ -2095,15 +2096,42 @@ document.getElementById('checklistForm').addEventListener('submit', async (e)=>{
   ckFlatItems().forEach(it=>{ items[it.key] = document.getElementById('ck_item_'+it.key).value.trim(); });
   const isPublic = document.getElementById('ck_public').checked;
 
+  const submitBtn = document.querySelector('#checklistForm button[type="submit"]');
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
+
+  let backup = null, newEntry = null;
   if(editingChecklistId){
     const idx = checklists.findIndex(x=>x.id===editingChecklistId);
+    backup = {...checklists[idx]};
     checklists[idx] = {...checklists[idx], ownerId, items, isPublic};
   }else{
     const pw = document.getElementById('ck_password').value;
+    if(!pw){
+      toast('비밀번호를 입력해주세요');
+      if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
+      return;
+    }
     const pwHash = await hashPw(pw);
-    checklists.push({id:'ck_'+Date.now(), ownerId, items, isPublic, pwHash});
+    newEntry = {id:'ck_'+Date.now(), ownerId, items, isPublic, pwHash};
+    checklists.push(newEntry);
   }
-  await saveChecklists();
+
+  const ok = await saveChecklists();
+
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = '저장'; }
+
+  if(!ok){
+    // roll back the optimistic local change so the UI doesn't show a phantom "saved" entry
+    if(editingChecklistId){
+      const idx = checklists.findIndex(x=>x.id===editingChecklistId);
+      if(idx>-1) checklists[idx] = backup;
+    }else if(newEntry){
+      checklists = checklists.filter(x=>x.id!==newEntry.id);
+    }
+    toast('저장에 실패했어요. 네트워크 확인 후 다시 시도해주세요');
+    return; // keep the modal open so nothing typed is lost
+  }
+
   closeChecklistFormModal();
   renderChecklistList();
   toast('저장되었습니다');
