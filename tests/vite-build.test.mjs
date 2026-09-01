@@ -298,3 +298,31 @@ test('feature: checklist entries have a shareable deep-link URL', () => {
   const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   assert.match(webHtml, /onclick="copyChecklistLink\(\)"/);
 });
+
+test('feature: parking page includes the Ewha Womans University Seoul Hospital overflow-parking guide', () => {
+  assert.ok(existsSync(join(root, 'web', 'public', 'images', 'parking-hospital-guide-1.jpg')));
+  assert.ok(existsSync(join(root, 'web', 'public', 'images', 'parking-hospital-guide-2.jpg')));
+
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const parkingSection = webHtml.slice(
+    webHtml.indexOf('id="sub-parking"'),
+    webHtml.indexOf('id="sub-checklist"'),
+  );
+  assert.match(parkingSection, /이대서울병원/);
+  assert.match(parkingSection, /C관 엘리베이터/);
+  assert.match(parkingSection, /src="\/images\/parking-hospital-guide-1\.jpg"/);
+  assert.match(parkingSection, /src="\/images\/parking-hospital-guide-2\.jpg"/);
+  // both images need meaningful alt text for accessibility, not empty/filename-only
+  const img1Tag = parkingSection.match(/<img[^>]*parking-hospital-guide-1[^>]*>/)[0];
+  const img2Tag = parkingSection.match(/<img[^>]*parking-hospital-guide-2[^>]*>/)[0];
+  assert.match(img1Tag, /alt="[^"]{20,}"/);
+  assert.match(img2Tag, /alt="[^"]{20,}"/);
+
+  // Vite must rewrite the root-absolute /images/... paths to the configured
+  // base at build time, or they'd 404 once deployed under the Pages
+  // project subpath (e.g. /thenew-hub/).
+  execFileSync('npx', ['vite', 'build'], { cwd: root, stdio: 'pipe' });
+  const distHtml = readFileSync(join(root, 'dist', 'index.html'), 'utf8');
+  assert.match(distHtml, /src="\.\/images\/parking-hospital-guide-1\.jpg"/);
+  assert.match(distHtml, /src="\.\/images\/parking-hospital-guide-2\.jpg"/);
+});
