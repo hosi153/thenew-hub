@@ -334,5 +334,5 @@ test('feature: parking rates are shown separately for 더뉴컨벤션 and 이대
     webHtml.indexOf('id="sub-checklist"'),
   );
   assert.match(parkingSection, /더뉴컨벤션 주차장[\s\S]{0,40}2시간 무료 \/ 이후 30분당 2,000원/);
-  assert.match(parkingSection, /이대서울병원 주차장[\s\S]{0,40}10분당 1,000원/);
+  assert.match(parkingSection, /이대서울병원 주차장[\s\S]{0,40}2시간 무료 \/ 이후 10분당 1,000원/);
 });
