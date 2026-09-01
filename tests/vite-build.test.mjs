@@ -326,3 +326,13 @@ test('feature: parking page includes the Ewha Womans University Seoul Hospital o
   assert.match(distHtml, /src="\.\/images\/parking-hospital-guide-1\.jpg"/);
   assert.match(distHtml, /src="\.\/images\/parking-hospital-guide-2\.jpg"/);
 });
+
+test('feature: parking rates are shown separately for 더뉴컨벤션 and 이대서울병원 (different fee structures)', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const parkingSection = webHtml.slice(
+    webHtml.indexOf('id="sub-parking"'),
+    webHtml.indexOf('id="sub-checklist"'),
+  );
+  assert.match(parkingSection, /더뉴컨벤션 주차장[\s\S]{0,40}2시간 무료 \/ 이후 30분당 2,000원/);
+  assert.match(parkingSection, /이대서울병원 주차장[\s\S]{0,40}10분당 1,000원/);
+});
