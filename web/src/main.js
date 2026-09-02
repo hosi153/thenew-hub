@@ -449,6 +449,7 @@ function openAddModal(){
 
 import { checklistState } from './features/checklist/state.js';
 import {
+  ckImportShootInfo,
   ckToggleSkip,
   closeChecklistDetail,
   closeChecklistFormModal,
@@ -581,6 +582,7 @@ document.addEventListener('keydown', e=>{
 /* on* attribute handlers (onclick="go(...)" etc) so existing markup keeps working unchanged. */
 window.calShiftMonth = calShiftMonth;
 window.cancelPwPrompt = cancelPwPrompt;
+window.ckImportShootInfo = ckImportShootInfo;
 window.ckToggleSkip = ckToggleSkip;
 window.closeChecklistDetail = closeChecklistDetail;
 window.closeChecklistFormModal = closeChecklistFormModal;

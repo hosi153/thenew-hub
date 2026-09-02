@@ -290,6 +290,22 @@ test('feature: checklist has a 스튜디오 name field at the top of the photogr
   assert.match(firstItemLine, /key:'studio', label:'스튜디오'/);
 });
 
+test('feature: "촬영 정보 가져오기" button copies studio dress/makeup/suit answers into the ceremony fields', () => {
+  const checklistView = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
+  assert.match(checklistView, /onclick="ckImportShootInfo\(\)"/);
+  assert.match(checklistView, /export function ckImportShootInfo\(\)/);
+  const fnBody = checklistView.slice(
+    checklistView.indexOf('export function ckImportShootInfo()'),
+    checklistView.indexOf('export function ckImportShootInfo()') + 700,
+  );
+  assert.match(fnBody, /\['shootDress','dress'\]/);
+  assert.match(fnBody, /\['shootMakeup','makeup'\]/);
+  assert.match(fnBody, /\['shootSuit','suit'\]/);
+
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  assert.match(main, /window\.ckImportShootInfo = ckImportShootInfo;/);
+});
+
 test('feature: checklist entries have a shareable deep-link URL', () => {
   const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
   // #more/checklist and #more/checklist/<id> must both be recognized by the

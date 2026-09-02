@@ -78,6 +78,9 @@ function buildChecklistFormTable(){
   let html = '';
   CHECKLIST_TEMPLATE.forEach(sec=>{
     html += `<div class="ck-section-h">${sec.section}</div>`;
+    if(sec.section==='💒 본식 (예식 당일)'){
+      html += `<button type="button" class="btn btn-outline ck-import-btn" onclick="ckImportShootInfo()">📸 촬영 정보 가져오기 (드레스·헤메·정장)</button>`;
+    }
     sec.items.forEach(it=>{
       html += `
       <div class="ck-row">
@@ -92,6 +95,25 @@ function buildChecklistFormTable(){
   el.innerHTML = html;
 }
 buildChecklistFormTable();
+
+/* Studio photoshoot and the actual ceremony usually reuse the same dress,
+   hair/makeup, and suit — this copies those three answers over so the
+   person doesn't have to retype (or re-decide) the same thing twice. */
+export function ckImportShootInfo(){
+  const pairs = [['shootDress','dress'], ['shootMakeup','makeup'], ['shootSuit','suit']];
+  let copied = 0;
+  pairs.forEach(([fromKey, toKey])=>{
+    const fromInput = document.getElementById('ck_item_'+fromKey);
+    const value = fromInput ? fromInput.value.trim() : '';
+    if(!value) return;
+    const toInput = document.getElementById('ck_item_'+toKey);
+    if(!toInput) return;
+    toInput.value = value;
+    document.getElementById('ck_skip_'+toKey).classList.toggle('on', value==='안함');
+    copied++;
+  });
+  toast(copied>0 ? '촬영 정보를 가져왔어요' : '먼저 위쪽 촬영 항목을 입력해주세요');
+}
 
 export function ckToggleSkip(key){
   const input = document.getElementById('ck_item_'+key);

@@ -572,3 +572,20 @@ Codex의 로컬 작업은 **품질이 높고 안전 원칙(운영 파일 미변�
 **검증**: `npm run build` 성공, 회귀 테스트 1개 추가(스튜디오 항목이 섹션 첫 번째 항목인지 검증), **전체 38개 테스트 통과**.
 
 **커밋**: (아래 실제 커밋 해시로 갱신)
+
+## 2026-08-31 (계속) — Claude (Sonnet 5, claude.ai 모바일 세션) — 체크리스트: 촬영 정보 가져오기 버튼
+
+**사용자 지시**: "본식섹션에 촬영 정보 가져오기 버튼만들어주고 해당 버튼 누르면 드레스 헤메 정장 정보를 가져오게 해줘 대부분 같더라고" — 스튜디오 촬영과 본식 당일 드레스/헤메/정장이 대체로 동일하니, 재입력 없이 복사할 수 있는 버튼 요청.
+
+**작업 내용**:
+- `web/src/features/checklist/view.js`의 `buildChecklistFormTable()`에서 "💒 본식 (예식 당일)" 섹션 헤더 바로 뒤에 "📸 촬영 정보 가져오기 (드레스·헤메·정장)" 버튼 삽입
+- `ckImportShootInfo()` 함수 신규: `shootDress→dress`, `shootMakeup→makeup`, `shootSuit→suit` 3쌍을 매핑해 값이 채워진 것만 복사. "안함" 값이면 대상 필드의 "안함" 버튼(`ck-skip-btn`)도 함께 활성화 상태로 맞춤. 아무 것도 복사할 게 없으면 "먼저 위쪽 촬영 항목을 입력해주세요" 안내.
+- CSS: `.ck-import-btn`으로 전체 너비 아웃라인 버튼 스타일 추가
+- `main.js`에 import 및 `window.ckImportShootInfo` 노출 추가(인라인 onclick 대응)
+
+**검증**:
+- `npm run build` 성공, 빌드 결과물에서 `window.ckImportShootInfo=` 노출 확인
+- `tests/vite-build.test.mjs`에 회귀 테스트 1개 추가(버튼 연결, 함수 존재, 3쌍 매핑, window 노출 전부 검증)
+- **전체 39개 테스트 통과**
+
+**커밋**: (아래 실제 커밋 해시로 갱신)
