@@ -280,6 +280,16 @@ test('bugfix: the matching-code list table does not cause horizontal scroll on n
   }
 });
 
+test('feature: checklist has a 스튜디오 name field at the top of the photography section', () => {
+  const checklistView = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
+  const photoSection = checklistView.slice(
+    checklistView.indexOf("section:'📸 웨딩촬영 (스튜디오)'"),
+    checklistView.indexOf("section:'💒 본식"),
+  );
+  const firstItemLine = photoSection.split('\n').find((line) => line.includes('key:'));
+  assert.match(firstItemLine, /key:'studio', label:'스튜디오'/);
+});
+
 test('feature: checklist entries have a shareable deep-link URL', () => {
   const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
   // #more/checklist and #more/checklist/<id> must both be recognized by the

@@ -25,6 +25,7 @@ const CHECKLIST_TEMPLATE = [
     { key:'band', label:'웨딩밴드', emoji:'💍' },
   ]},
   { section:'📸 웨딩촬영 (스튜디오)', items:[
+    { key:'studio', label:'스튜디오', emoji:'📸' },
     { key:'shootDress', label:'촬영 드레스', emoji:'👰🏻\u200d♀️', def:'안함' },
     { key:'shootMakeup', label:'촬영헤어메이크업', emoji:'💄', def:'안함' },
     { key:'shootSuit', label:'촬영 정장', emoji:'🤵🏻', def:'안함' },
