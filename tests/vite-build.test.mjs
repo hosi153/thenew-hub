@@ -306,6 +306,39 @@ test('feature: "촬영 정보 가져오기" button copies studio dress/makeup/su
   assert.match(main, /window\.ckImportShootInfo = ckImportShootInfo;/);
 });
 
+test('feature: 매일크린 (move-in cleaning) partner entry is registered with rates and contact', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /data-partner="dailyclean"/);
+  assert.match(webHtml, /id="partner-dailyclean"/);
+  assert.match(webHtml, /매일크린/);
+  assert.match(webHtml, /010-4514-1729/);
+  assert.match(webHtml, /http:\/\/pf\.kakao\.com\/_jCLxan\/chat/);
+  assert.match(webHtml, /유리막 코팅/);
+  // spot-check a couple of the discounted rates
+  assert.match(webHtml, /16만원 → <b>14만원<\/b>/);
+  assert.match(webHtml, /12,000원 → <b>11,000원<\/b>/);
+});
+
+test('feature: every partner detail page gets a shareable #partners/<id> link, not just the newest one', () => {
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  assert.match(main, /if\(page==='partners'\)\{[\s\S]*?openPartner\(decodeURIComponent\(sub\)\)/);
+  assert.match(main, /function ensurePartnerLinkButton\(subpageEl, partnerId\)/);
+  assert.match(main, /async function copyPartnerLink\(partnerId\)/);
+  assert.match(main, /#partners\/\$\{encodeURIComponent\(partnerId\)\}/);
+  // openPartner() must call the injector for whichever partner was opened,
+  // so this isn't something that only works for one hardcoded id.
+  const openPartnerBody = main.slice(main.indexOf('function openPartner(name)'), main.indexOf('function openPartner(name)') + 400);
+  assert.match(openPartnerBody, /ensurePartnerLinkButton\(target, name\);/);
+
+  // every data-partner id in the list must have a matching detail subpage
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const ids = [...webHtml.matchAll(/data-partner="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(ids.length >= 14, `expected at least 14 partners, found ${ids.length}`);
+  ids.forEach((id) => {
+    assert.match(webHtml, new RegExp(`id="partner-${id}"`));
+  });
+});
+
 test('feature: checklist entries have a shareable deep-link URL', () => {
   const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
   // #more/checklist and #more/checklist/<id> must both be recognized by the

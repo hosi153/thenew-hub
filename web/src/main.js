@@ -402,6 +402,7 @@ document.getElementById('fab').style.display='none';
    Opening the shared link with a #hash jumps straight to that tab, and
    optionally a sub-target after a slash:
    #home  #halls  #codes  #partners  #more
+   #partners/<partnerId>         — jumps straight to that partner's detail
    #more/hallinfo  #more/terms  #more/bouquet  #more/parking
    #more/checklist              — jumps straight to the checklist list
    #more/checklist/<entryId>    — also opens that one entry's detail view
@@ -415,6 +416,10 @@ let pendingChecklistDeepLinkId = null;
   if(!valid.includes(page)) return;
   go(page);
   if(!sub) return;
+  if(page==='partners'){
+    setTimeout(()=>openPartner(decodeURIComponent(sub)), 0);
+    return;
+  }
   if(page==='more' && ['hallinfo','terms','bouquet','parking','checklist'].includes(sub)){
     setTimeout(()=>openSub(sub), 0);
     if(sub==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
@@ -422,9 +427,42 @@ let pendingChecklistDeepLinkId = null;
 })();
 
 function openPartner(name){
+  const target = document.getElementById('partner-'+name);
+  if(!target) return;
   document.getElementById('partners-menu').style.display='none';
   document.querySelectorAll('#page-partners .subpage').forEach(s=>s.classList.remove('active'));
-  document.getElementById('partner-'+name).classList.add('active');
+  target.classList.add('active');
+  ensurePartnerLinkButton(target, name);
+}
+/* Every partner detail page — present and future — automatically gets a
+   "링크 복사" button, injected once right after its back-link, instead of
+   having to hand-add it to each partner's HTML block individually. */
+function ensurePartnerLinkButton(subpageEl, partnerId){
+  let btn = subpageEl.querySelector('.partner-link-btn');
+  if(!btn){
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-outline btn-block partner-link-btn';
+    btn.style.margin = '10px 0 14px';
+    btn.textContent = '🔗 링크 복사';
+    const backLink = subpageEl.querySelector('.back-link');
+    if(backLink) backLink.insertAdjacentElement('afterend', btn);
+    else subpageEl.prepend(btn);
+  }
+  btn.onclick = () => copyPartnerLink(partnerId);
+}
+async function copyPartnerLink(partnerId){
+  const url = `${location.origin}${location.pathname}#partners/${encodeURIComponent(partnerId)}`;
+  try{
+    await navigator.clipboard.writeText(url);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e2){}
+    document.body.removeChild(ta);
+  }
+  toast('링크가 복사되었어요');
 }
 function closePartner(){
   document.getElementById('partners-menu').style.display='block';
