@@ -306,6 +306,16 @@ test('feature: "촬영 정보 가져오기" button copies studio dress/makeup/su
   assert.match(main, /window\.ckImportShootInfo = ckImportShootInfo;/);
 });
 
+test('feature: partner list is ordered with requested businesses pinned to the top', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const ids = [...webHtml.matchAll(/data-partner="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(
+    ids.slice(0, 6),
+    ['dailyclean', 'hanbok', 'invite', 'daege', 'daegeretouch', 'onto'],
+    '매일크린/느와한복/메리지포켓/대게 사진관/대게 보정공장/온투필름 순으로 최상단에 있어야 함',
+  );
+});
+
 test('feature: 매일크린 (move-in cleaning) partner entry is registered with rates and contact', () => {
   const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   assert.match(webHtml, /data-partner="dailyclean"/);
