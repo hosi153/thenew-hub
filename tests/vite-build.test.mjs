@@ -344,6 +344,30 @@ test('feature: Instagram-share list exists with 닉네임/인스타 아이디/�
   assert.match(main, /'hallinfo','terms','bouquet','parking','checklist','insta'/);
 });
 
+test('bugfix: insta share list wraps long underscore-heavy handles instead of overflowing horizontally', () => {
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  const instaCols = css.slice(css.indexOf('table.insta-list-table th:nth-child(1)'), css.indexOf('table.insta-list-table th:nth-child(3)'));
+  // word-break:break-word alone doesn't break inside long underscore-joined
+  // strings (no natural break point), so the id/nickname columns need
+  // break-all/overflow-wrap:anywhere too.
+  assert.match(instaCols, /word-break:break-all/);
+  assert.match(instaCols, /overflow-wrap:anywhere/);
+});
+
+test('bugfix: seeded insta entries sort newest-first matching the order the person pasted them in (bottom of their list = most recent)', () => {
+  const view = readFileSync(join(root, 'web', 'src', 'features', 'insta', 'view.js'), 'utf8');
+  const seedBlock = view.slice(view.indexOf('const SEED_INSTA = ['), view.indexOf('];', view.indexOf('const SEED_INSTA = [')));
+  const rows = [...seedBlock.matchAll(/id:'(insta_seed_\d+)'[\s\S]*?createdAt:'([^']*)'/g)];
+  assert.ok(rows.length >= 53, `expected at least 53 seed rows, found ${rows.length}`);
+  // createdAt must be strictly increasing by seed index — the person's
+  // pasted list went oldest (top) to newest (bottom), so insta_seed_1 needs
+  // the earliest timestamp and the last one the latest, or a fresh load
+  // would put the wrong person at the top of the "newest first" list.
+  for(let i = 1; i < rows.length; i++){
+    assert.ok(rows[i][2] > rows[i-1][2], `insta_seed_${i+1}'s createdAt should be later than insta_seed_${i}'s`);
+  }
+});
+
 test('feature: partner list is ordered with requested businesses pinned to the top', () => {
   const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const ids = [...webHtml.matchAll(/data-partner="([^"]+)"/g)].map((m) => m[1]);
