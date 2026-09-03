@@ -325,6 +325,19 @@ test('feature: every partner detail page gets a shareable #partners/<id> link, n
   assert.match(main, /function ensurePartnerLinkButton\(subpageEl, partnerId\)/);
   assert.match(main, /async function copyPartnerLink\(partnerId\)/);
   assert.match(main, /#partners\/\$\{encodeURIComponent\(partnerId\)\}/);
+  // The link icon is appended next to the partner name (first <h3>), not as
+  // a separate full-width block button — small icon, inline with the title.
+  const injectorBody = main.slice(
+    main.indexOf('function ensurePartnerLinkButton(subpageEl, partnerId)'),
+    main.indexOf('async function copyPartnerLink'),
+  );
+  assert.match(injectorBody, /subpageEl\.querySelector\('h3'\)/);
+  assert.match(injectorBody, /heading\.appendChild\(btn\);/);
+  assert.doesNotMatch(injectorBody, /btn-block/);
+
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  assert.match(css, /\.partner-link-btn\{/);
+
   // openPartner() must call the injector for whichever partner was opened,
   // so this isn't something that only works for one hardcoded id.
   const openPartnerBody = main.slice(main.indexOf('function openPartner(name)'), main.indexOf('function openPartner(name)') + 400);

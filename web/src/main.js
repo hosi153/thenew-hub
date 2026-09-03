@@ -438,18 +438,18 @@ function openPartner(name){
    "링크 복사" button, injected once right after its back-link, instead of
    having to hand-add it to each partner's HTML block individually. */
 function ensurePartnerLinkButton(subpageEl, partnerId){
-  let btn = subpageEl.querySelector('.partner-link-btn');
+  const heading = subpageEl.querySelector('h3');
+  if(!heading) return;
+  let btn = heading.querySelector('.partner-link-btn');
   if(!btn){
     btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-outline btn-block partner-link-btn';
-    btn.style.margin = '10px 0 14px';
-    btn.textContent = '🔗 링크 복사';
-    const backLink = subpageEl.querySelector('.back-link');
-    if(backLink) backLink.insertAdjacentElement('afterend', btn);
-    else subpageEl.prepend(btn);
+    btn.className = 'partner-link-btn';
+    btn.setAttribute('aria-label', '이 제휴업체 링크 복사');
+    btn.textContent = '🔗';
+    heading.appendChild(btn);
   }
-  btn.onclick = () => copyPartnerLink(partnerId);
+  btn.onclick = (e) => { e.stopPropagation(); copyPartnerLink(partnerId); };
 }
 async function copyPartnerLink(partnerId){
   const url = `${location.origin}${location.pathname}#partners/${encodeURIComponent(partnerId)}`;
