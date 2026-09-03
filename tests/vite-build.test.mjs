@@ -306,6 +306,44 @@ test('feature: "촬영 정보 가져오기" button copies studio dress/makeup/su
   assert.match(main, /window\.ckImportShootInfo = ckImportShootInfo;/);
 });
 
+test('feature: Instagram-share list exists with 닉네임/인스타 아이디/업로드 fields, sorted newest-first', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /data-subpage="insta"/);
+  assert.match(webHtml, /id="sub-insta"/);
+  assert.match(webHtml, /id="instaList"/);
+  assert.match(webHtml, /id="instaFormOverlay"/);
+  assert.match(webHtml, /id="instaDetailOverlay"/);
+  assert.match(webHtml, /id="insta_d_open"[^>]*target="_blank"/);
+
+  const state = readFileSync(join(root, 'web', 'src', 'features', 'insta', 'state.js'), 'utf8');
+  assert.match(state, /export const instaState/);
+
+  const api = readFileSync(join(root, 'web', 'src', 'features', 'insta', 'api.js'), 'utf8');
+  assert.match(api, /const COLLECTION = 'instaShares'/);
+
+  const view = readFileSync(join(root, 'web', 'src', 'features', 'insta', 'view.js'), 'utf8');
+  assert.match(view, /export async function initializeInstaShares/);
+  assert.match(view, /export function renderInstaList/);
+  assert.match(view, /document\.getElementById\('instaForm'\)\.addEventListener\('submit'/);
+  // must sort by the auto-recorded createdAt, newest first — not by a
+  // user-editable field that could be gamed to sit at the top
+  assert.match(view, /\(b\.createdAt\|\|''\)\.localeCompare\(a\.createdAt\|\|''\)/);
+  // Instagram URLs/@-handles pasted into the id field must be normalized
+  // down to a bare username before being stored/linked.
+  assert.match(view, /function normalizeInstaId/);
+  assert.match(view, /https:\/\/www\.instagram\.com\/\$\{encodeURIComponent\(item\.instaId\)\}/);
+  // launch seed data
+  assert.match(view, /const SEED_INSTA = \[/);
+  const seedCount = (view.match(/id:'insta_seed_\d+'/g) || []).length;
+  assert.ok(seedCount >= 53, `expected at least 53 seeded insta entries, found ${seedCount}`);
+
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  assert.match(main, /initializeInstaShares\(\)/);
+  assert.match(main, /renderInstaList\(\);/);
+  assert.match(main, /action==='insta-detail'\) openInstaDetail\(target\.dataset\.id\)/);
+  assert.match(main, /'hallinfo','terms','bouquet','parking','checklist','insta'/);
+});
+
 test('feature: partner list is ordered with requested businesses pinned to the top', () => {
   const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const ids = [...webHtml.matchAll(/data-partner="([^"]+)"/g)].map((m) => m[1]);

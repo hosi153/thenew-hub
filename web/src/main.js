@@ -72,7 +72,7 @@ function forceRerenderIfReady(){
       const hallsPageActive = document.getElementById('page-halls').classList.contains('active');
       if(hallsPageActive && scheduleState.view==='calendar') renderCalendar();
       else renderHalls();
-      renderCodes(); renderChecklistList();
+      renderCodes(); renderChecklistList(); renderInstaList();
     }catch(e){ console.error('forceRerenderIfReady failed:', e); }
   }
 }
@@ -340,6 +340,8 @@ async function init(){
     initializeMatchingCodes(SEED_CODES),
     // ---- Checklist: small collection, simple one-time load (no pagination needed) ----
     initializeChecklists(),
+    // ---- Insta shares: small collection, seeded with launch data ----
+    initializeInstaShares(),
   ]);
   if(scheduleInitResult.usingSeedFallback) isUsingSeedFallback = true;
   if(codesInitResult.usingSeedFallback) isUsingSeedFallback = true;
@@ -352,6 +354,7 @@ async function init(){
     renderHalls();
     renderCodes();
     renderChecklistList();
+    renderInstaList();
     if(document.getElementById('page-halls').classList.contains('active') && scheduleState.view==='calendar') renderCalendar();
     if(isUsingSeedFallback) toast('실시간 데이터 연결에 실패해 기본 데이터를 표시하고 있어요.', 6000);
     if(pendingChecklistDeepLinkId){
@@ -420,7 +423,7 @@ let pendingChecklistDeepLinkId = null;
     setTimeout(()=>openPartner(decodeURIComponent(sub)), 0);
     return;
   }
-  if(page==='more' && ['hallinfo','terms','bouquet','parking','checklist'].includes(sub)){
+  if(page==='more' && ['hallinfo','terms','bouquet','parking','checklist','insta'].includes(sub)){
     setTimeout(()=>openSub(sub), 0);
     if(sub==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
   }
@@ -502,6 +505,17 @@ import {
   requestEditChecklist,
 } from './features/checklist/view.js';
 
+import {
+  closeInstaDetail,
+  closeInstaFormModal,
+  initializeInstaShares,
+  openInstaDetail,
+  openInstaEntry,
+  renderInstaList,
+  requestDeleteInsta,
+  requestEditInsta,
+} from './features/insta/view.js';
+
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str || '';
@@ -518,6 +532,7 @@ function runDataAction(target){
   if(action==='hall-detail') openHallDetail(target.dataset.id);
   else if(action==='code-detail') openCodeDetail(target.dataset.id);
   else if(action==='checklist-detail') openChecklistDetail(target.dataset.id);
+  else if(action==='insta-detail') openInstaDetail(target.dataset.id);
   else if(action==='calendar-date') calSelectDate(target.dataset.date);
   else if(action==='partner') openPartner(target.dataset.partner);
   else if(action==='subpage') openSub(target.dataset.subpage);
@@ -638,6 +653,11 @@ window.handleHallSearchInput = handleHallSearchInput;
 window.loadMyChecklist = loadMyChecklist;
 window.openAddModal = openAddModal;
 window.openChecklistEntry = openChecklistEntry;
+window.closeInstaDetail = closeInstaDetail;
+window.closeInstaFormModal = closeInstaFormModal;
+window.openInstaEntry = openInstaEntry;
+window.requestDeleteInsta = requestDeleteInsta;
+window.requestEditInsta = requestEditInsta;
 window.renderCodes = renderCodes;
 window.renderHalls = renderHalls;
 window.requestDeleteChecklist = requestDeleteChecklist;

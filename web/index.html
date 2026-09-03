@@ -593,6 +593,7 @@
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="bouquet"><span class="l"><span class="dot"></span>부케 안내</span><span class="arrow">›</span></div>
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="parking"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="checklist"><span class="l"><span class="dot"></span>예식 준비 체크리스트</span><span class="arrow">›</span></div>
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="insta"><span class="l"><span class="dot"></span>인스타 공유</span><span class="arrow">›</span></div>
         <a class="info-link" href="https://docs.google.com/spreadsheets/d/1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/edit?usp=sharing" target="_blank"><span class="l"><span class="dot"></span>예식 양식 모음</span><span class="arrow">↗</span></a>
         <a class="info-link" href="https://drive.google.com/drive/folders/1sFr7egHVGCvKwgTpKY7B2ZO310Ecx5-D?usp=drive_link" target="_blank"><span class="l"><span class="dot"></span>예식 음원 모음</span><span class="arrow">↗</span></a>
       </div>
@@ -710,6 +711,14 @@
       <p class="section-sub">항목을 입력해서 진행상황을 정리하고, 완성되면 복사 버튼으로 텍스트를 그대로 가져갈 수 있어요.</p>
       <button class="btn btn-primary btn-block" onclick="openChecklistEntry()" style="margin-bottom:16px;">내 체크리스트 작성 · 수정</button>
       <div id="checklistList"><div class="loading">불러오는 중...</div></div>
+    </div>
+
+    <div class="subpage" id="sub-insta">
+      <button class="back-link" onclick="closeSub()">‹ 정보 모음으로</button>
+      <div class="kicker">RESOURCES</div><div class="section-title">인스타 공유</div>
+      <p class="section-sub">닉네임과 인스타 아이디를 공유하고, 서로 팔로우해보세요. 최신 등록순으로 보여요.</p>
+      <button class="btn btn-primary btn-block" onclick="openInstaEntry()" style="margin-bottom:16px;">내 인스타 공유하기</button>
+      <div id="instaList"><div class="loading">불러오는 중...</div></div>
     </div>
 
   </section>
@@ -900,6 +909,47 @@
       </div>
       <div class="actions">
         <button type="button" class="btn btn-outline" onclick="closeChecklistFormModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ---------------- Insta Share Detail ---------------- -->
+<div class="overlay" id="instaDetailOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="instaDetailTitle">
+    <h2 id="instaDetailTitle">인스타 상세</h2>
+    <div class="field"><label>닉네임</label><p id="insta_d_nickname" style="font-size:15px; font-weight:600;"></p></div>
+    <div class="field"><label>인스타 아이디</label><p id="insta_d_insta" style="font-size:15px;"></p></div>
+    <div class="field"><label>업로드</label><p id="insta_d_date" style="font-size:14px; color:var(--ink-soft);"></p></div>
+    <a id="insta_d_open" class="btn btn-primary btn-block" href="#" target="_blank" rel="noopener noreferrer" style="margin-top:6px;">📸 인스타그램 열기</a>
+    <div class="actions">
+      <button type="button" class="btn btn-outline" onclick="requestEditInsta()">수정</button>
+      <button type="button" class="btn btn-danger" onclick="requestDeleteInsta()">삭제</button>
+      <button type="button" class="btn btn-primary" onclick="closeInstaDetail()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- Insta Share Add/Edit Modal ---------------- -->
+<div class="overlay" id="instaFormOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="instaFormTitle">
+    <h2 id="instaFormTitle">인스타 공유 등록</h2>
+    <form id="instaForm">
+      <div class="field">
+        <label for="insta_nickname">닉네임 <span class="req">*</span></label>
+        <input type="text" id="insta_nickname" maxlength="40" placeholder="예: 2610도화" required>
+      </div>
+      <div class="field">
+        <label for="insta_id">인스타 아이디 <span class="req">*</span></label>
+        <input type="text" id="insta_id" maxlength="60" placeholder="@아이디 또는 인스타그램 주소 붙여넣기 가능" required>
+      </div>
+      <div class="field" id="insta_pw_field">
+        <label for="insta_password">비밀번호 <span class="req">*</span> <span style="font-weight:400; color:var(--ink-soft); font-size:11.5px;">(나중에 수정·삭제할 때 필요해요)</span></label>
+        <input type="password" id="insta_password" minlength="4" maxlength="128" placeholder="4자 이상 숫자/영문" required>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" onclick="closeInstaFormModal()">취소</button>
         <button type="submit" class="btn btn-primary">저장</button>
       </div>
     </form>
