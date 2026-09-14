@@ -368,6 +368,16 @@ test('bugfix: seeded insta entries sort newest-first matching the order the pers
   }
 });
 
+test('feature: partner list clearly discloses it is not an official 더뉴컨벤션 partnership', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const partnersMenu = webHtml.slice(
+    webHtml.indexOf('id="partners-menu"'),
+    webHtml.indexOf('id="partners-menu"') + 1200,
+  );
+  assert.match(partnersMenu, /공식 제휴가 아닌/);
+  assert.match(partnersMenu, /오픈카톡방 운영자 개인/);
+});
+
 test('feature: partner list is ordered with requested businesses pinned to the top', () => {
   const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const ids = [...webHtml.matchAll(/data-partner="([^"]+)"/g)].map((m) => m[1]);
