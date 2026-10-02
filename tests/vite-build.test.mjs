@@ -579,6 +579,9 @@ test('feature: 디자인바이리본 (invitation design) partner entry is regist
   assert.match(reborn, /<div class="bq-item-label">1단<\/div>/);
   assert.match(reborn, /<div class="bq-item-label">2단<\/div>/);
   assert.match(reborn, /모든 디자인의 저작권은 디자인바이리본에 있습니다/);
+  // couples contacting the vendor need to mention this came from the venue's
+  // channel, and it's meant to stand out, so it must actually be bolded
+  assert.match(reborn, /<b>연락 시 "더뉴홀 채널 보고 연락드렸다"고 말씀해주세요\.<\/b>/);
 
   for(const label of labels){
     assert.ok(existsSync(join(root, 'web', 'public', 'images', 'partners', 'reborn', `${label}.jpg`)));
