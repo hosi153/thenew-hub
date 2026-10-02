@@ -543,3 +543,35 @@ test('feature: tapping any bouquet thumbnail opens it full-size in a lightbox', 
   // same as every other overlay in the app
   assert.match(main, /ov\.id==='bqLightboxOverlay'\) closeBouquetLightbox\(\);/);
 });
+
+test('feature: 디자인바이리본 (invitation design) partner entry is registered with pricing, benefit, contact, and sample sheets', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /data-partner="reborn"/);
+  assert.match(webHtml, /id="partner-reborn"/);
+  assert.match(webHtml, /DESIGN BY REBORN/);
+  assert.match(webHtml, /http:\/\/pf\.kakao\.com\/_xhJxejn/);
+  assert.match(webHtml, /https:\/\/www\.instagram\.com\/design_by_reborn\//);
+  assert.match(webHtml, /59,000원~/);
+  assert.match(webHtml, /89,000원~/);
+  assert.match(webHtml, /디자인 봉투 100매 증정/);
+
+  const reborn = webHtml.slice(webHtml.indexOf('id="partner-reborn"'), webHtml.indexOf('</section>', webHtml.indexOf('id="partner-reborn"')));
+  const labels = ['1단-세로', '1단-가로', '1단-가로형', '1단-세로형', '2단-세로형', '2단-가로형'];
+  for(const label of labels){
+    assert.match(reborn, new RegExp(`src="/images/partners/reborn/${label}\\.jpg"`));
+  }
+  // every sample image must still be tappable (reuses the bouquet lightbox),
+  // and must use the "tall sheet" layout so the catalog isn't cropped away
+  const zoomCount = (reborn.match(/data-action="bouquet-zoom"/g) || []).length;
+  assert.strictEqual(zoomCount, 6);
+  const tallCount = (reborn.match(/class="bq-grid bq-grid-tall"/g) || []).length;
+  assert.strictEqual(tallCount, 6);
+  assert.match(reborn, /모든 디자인의 저작권은 디자인바이리본에 있습니다/);
+
+  for(const label of labels){
+    assert.ok(existsSync(join(root, 'web', 'public', 'images', 'partners', 'reborn', `${label}.jpg`)));
+  }
+
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  assert.match(css, /\.bq-grid-tall\{/);
+});
