@@ -210,6 +210,10 @@
      scannable; tapping still opens the full-size lightbox. */
   .bq-grid-tall{ grid-template-columns:1fr; }
   .bq-grid-tall img{ aspect-ratio:auto; max-height:420px; object-fit:contain; background:var(--surface-input); }
+  /* Two tall sheets side by side (e.g. 1단/2단 grouped together) — same
+     "don't crop" treatment as .bq-grid-tall, just two columns instead of one. */
+  .bq-grid-tall-2col{ grid-template-columns:1fr 1fr; }
+  .bq-grid-tall-2col img{ aspect-ratio:auto; max-height:420px; object-fit:contain; background:var(--surface-input); }
 
   #bqLightboxOverlay{ display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.9); padding:24px; }
   #bqLightboxOverlay[aria-hidden="true"]{ display:none; }

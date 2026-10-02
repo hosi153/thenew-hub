@@ -569,11 +569,15 @@ test('feature: 디자인바이리본 (invitation design) partner entry is regist
   assert.ok(!existsSync(join(root, 'web', 'public', 'images', 'partners', 'reborn', '1단-세로.jpg')));
   assert.ok(!existsSync(join(root, 'web', 'public', 'images', 'partners', 'reborn', '1단-가로.jpg')));
   // every sample image must still be tappable (reuses the bouquet lightbox),
-  // and must use the "tall sheet" layout so the catalog isn't cropped away
+  // and 1단/2단 are each grouped into one side-by-side 2-column row (not
+  // four separate single-image rows) using the "tall sheet" treatment so
+  // the catalog isn't cropped away
   const zoomCount = (reborn.match(/data-action="bouquet-zoom"/g) || []).length;
   assert.strictEqual(zoomCount, 4);
-  const tallCount = (reborn.match(/class="bq-grid bq-grid-tall"/g) || []).length;
-  assert.strictEqual(tallCount, 4);
+  const tall2colCount = (reborn.match(/class="bq-grid bq-grid-tall-2col"/g) || []).length;
+  assert.strictEqual(tall2colCount, 2, 'expected one 2-column row for 1단 and one for 2단');
+  assert.match(reborn, /<div class="bq-item-label">1단<\/div>/);
+  assert.match(reborn, /<div class="bq-item-label">2단<\/div>/);
   assert.match(reborn, /모든 디자인의 저작권은 디자인바이리본에 있습니다/);
 
   for(const label of labels){
