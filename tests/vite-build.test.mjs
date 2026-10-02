@@ -490,3 +490,32 @@ test('feature: parking rates are shown separately for 더뉴컨벤션 and 이대
   assert.match(parkingSection, /더뉴컨벤션 주차장[\s\S]{0,60}2시간 무료 \/ 30분\(기본\) 3,000원 \/ 이후 10분당 1,000원/);
   assert.match(parkingSection, /이대서울병원 주차장[\s\S]{0,60}2시간 무료 \/ 30분\(기본\) 3,000원 \/ 이후 10분당 1,000원/);
 });
+
+test('feature: bouquet page embeds the vendor-provided photo catalog locally instead of only linking out to Notion', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const bouquetSection = webHtml.slice(
+    webHtml.indexOf('id="sub-bouquet"'),
+    webHtml.indexOf('id="sub-parking"'),
+  );
+  assert.match(bouquetSection, /기본 라인 \(별도 추가금 없음\)/);
+  assert.match(bouquetSection, /프리미엄 라인 \(15만원 추가금\)/);
+  assert.match(bouquetSection, /src="\/images\/bouquet\/basic\/2-1\.jpg"/);
+  assert.match(bouquetSection, /src="\/images\/bouquet\/premium\/32-1\.jpg"/);
+
+  const basicCount = (bouquetSection.match(/\/images\/bouquet\/basic\//g) || []).length;
+  const premiumCount = (bouquetSection.match(/\/images\/bouquet\/premium\//g) || []).length;
+  assert.strictEqual(basicCount, 26, `expected 26 basic-line bouquet photos, found ${basicCount}`);
+  assert.strictEqual(premiumCount, 12, `expected 12 premium-line bouquet photos, found ${premiumCount}`);
+
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  assert.match(css, /\.bq-grid\{/);
+
+  // base:'./' must rewrite these to relative paths at build time too
+  execFileSync('npx', ['vite', 'build'], { cwd: root, stdio: 'pipe' });
+  const distHtml = readFileSync(join(root, 'dist', 'index.html'), 'utf8');
+  assert.match(distHtml, /src="\.\/images\/bouquet\/basic\/2-1\.jpg"/);
+  const distBasicDir = join(root, 'dist', 'images', 'bouquet', 'basic');
+  const distPremiumDir = join(root, 'dist', 'images', 'bouquet', 'premium');
+  assert.strictEqual(readdirSync(distBasicDir).length, 26);
+  assert.strictEqual(readdirSync(distPremiumDir).length, 12);
+});
