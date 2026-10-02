@@ -556,16 +556,24 @@ test('feature: 디자인바이리본 (invitation design) partner entry is regist
   assert.match(webHtml, /디자인 봉투 100매 증정/);
 
   const reborn = webHtml.slice(webHtml.indexOf('id="partner-reborn"'), webHtml.indexOf('</section>', webHtml.indexOf('id="partner-reborn"')));
-  const labels = ['1단-세로', '1단-가로', '1단-가로형', '1단-세로형', '2단-세로형', '2단-가로형'];
+  // the vendor's "1단 세로"/"1단 가로" sheets and "1단 세로형"/"1단 가로형" sheets
+  // turned out to show the same designs re-exported in a different sheet
+  // template, so only the (nicer-looking) "~형" versions are kept — 4 sheets
+  // total, not 6, and the old duplicate labels/files must be gone entirely.
+  const labels = ['1단-가로형', '1단-세로형', '2단-세로형', '2단-가로형'];
   for(const label of labels){
     assert.match(reborn, new RegExp(`src="/images/partners/reborn/${label}\\.jpg"`));
   }
+  assert.doesNotMatch(reborn, /partners\/reborn\/1단-세로\.jpg/);
+  assert.doesNotMatch(reborn, /partners\/reborn\/1단-가로\.jpg/);
+  assert.ok(!existsSync(join(root, 'web', 'public', 'images', 'partners', 'reborn', '1단-세로.jpg')));
+  assert.ok(!existsSync(join(root, 'web', 'public', 'images', 'partners', 'reborn', '1단-가로.jpg')));
   // every sample image must still be tappable (reuses the bouquet lightbox),
   // and must use the "tall sheet" layout so the catalog isn't cropped away
   const zoomCount = (reborn.match(/data-action="bouquet-zoom"/g) || []).length;
-  assert.strictEqual(zoomCount, 6);
+  assert.strictEqual(zoomCount, 4);
   const tallCount = (reborn.match(/class="bq-grid bq-grid-tall"/g) || []).length;
-  assert.strictEqual(tallCount, 6);
+  assert.strictEqual(tallCount, 4);
   assert.match(reborn, /모든 디자인의 저작권은 디자인바이리본에 있습니다/);
 
   for(const label of labels){
