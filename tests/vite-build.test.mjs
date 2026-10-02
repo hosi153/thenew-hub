@@ -519,3 +519,27 @@ test('feature: bouquet page embeds the vendor-provided photo catalog locally ins
   assert.strictEqual(readdirSync(distBasicDir).length, 27);
   assert.strictEqual(readdirSync(distPremiumDir).length, 12);
 });
+
+test('feature: tapping any bouquet thumbnail opens it full-size in a lightbox', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /id="bqLightboxOverlay"/);
+  assert.match(webHtml, /id="bqLightboxImg"/);
+  assert.match(webHtml, /onclick="closeBouquetLightbox\(\)"/);
+
+  const bouquetSection = webHtml.slice(
+    webHtml.indexOf('id="sub-bouquet"'),
+    webHtml.indexOf('id="sub-parking"'),
+  );
+  const bouquetImgCount = (bouquetSection.match(/<img src="\/images\/bouquet\//g) || []).length;
+  const zoomableCount = (bouquetSection.match(/data-action="bouquet-zoom"/g) || []).length;
+  assert.strictEqual(zoomableCount, bouquetImgCount, 'every bouquet thumbnail should be zoomable, not just some');
+  assert.ok(bouquetImgCount >= 39, `expected at least 39 bouquet photos, found ${bouquetImgCount}`);
+
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  assert.match(main, /action==='bouquet-zoom'\) openBouquetLightbox\(target\.src, target\.alt\)/);
+  assert.match(main, /function openBouquetLightbox\(src, alt\)/);
+  assert.match(main, /window\.closeBouquetLightbox = closeBouquetLightbox;/);
+  // clicking the dark backdrop (not the image itself) should also close it,
+  // same as every other overlay in the app
+  assert.match(main, /ov\.id==='bqLightboxOverlay'\) closeBouquetLightbox\(\);/);
+});

@@ -536,6 +536,20 @@ function runDataAction(target){
   else if(action==='calendar-date') calSelectDate(target.dataset.date);
   else if(action==='partner') openPartner(target.dataset.partner);
   else if(action==='subpage') openSub(target.dataset.subpage);
+  else if(action==='bouquet-zoom') openBouquetLightbox(target.src, target.alt);
+}
+
+/* Tapping any bouquet thumbnail opens it full-size in a simple lightbox,
+   reusing the same show/hideOverlay helpers every other modal in the app
+   uses (focus trap, aria-hidden, click-outside-to-close all come for free). */
+function openBouquetLightbox(src, alt){
+  const img = document.getElementById('bqLightboxImg');
+  img.src = src;
+  img.alt = alt || '부케 확대 이미지';
+  showOverlay('bqLightboxOverlay');
+}
+function closeBouquetLightbox(){
+  hideOverlay('bqLightboxOverlay');
 }
 document.addEventListener('click', e=>{
   const target = e.target.closest('[data-action]');
@@ -559,6 +573,7 @@ document.querySelectorAll('.overlay').forEach(ov=>{
     else if(ov.id==='codeDetailOverlay') closeCodeDetail();
     else if(ov.id==='pwOverlay') cancelPwPrompt();
     else if(ov.id==='checklistDetailOverlay') closeChecklistDetail();
+    else if(ov.id==='bqLightboxOverlay') closeBouquetLightbox();
     else if(ov.id==='checklistFormOverlay') closeChecklistFormModal();
   });
 });
@@ -637,6 +652,7 @@ window.calShiftMonth = calShiftMonth;
 window.cancelPwPrompt = cancelPwPrompt;
 window.ckImportShootInfo = ckImportShootInfo;
 window.ckToggleSkip = ckToggleSkip;
+window.closeBouquetLightbox = closeBouquetLightbox;
 window.closeChecklistDetail = closeChecklistDetail;
 window.closeChecklistFormModal = closeChecklistFormModal;
 window.closeCodeDetail = closeCodeDetail;
