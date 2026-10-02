@@ -504,7 +504,7 @@ test('feature: bouquet page embeds the vendor-provided photo catalog locally ins
 
   const basicCount = (bouquetSection.match(/\/images\/bouquet\/basic\//g) || []).length;
   const premiumCount = (bouquetSection.match(/\/images\/bouquet\/premium\//g) || []).length;
-  assert.strictEqual(basicCount, 26, `expected 26 basic-line bouquet photos, found ${basicCount}`);
+  assert.strictEqual(basicCount, 27, `expected 27 basic-line bouquet photos, found ${basicCount}`);
   assert.strictEqual(premiumCount, 12, `expected 12 premium-line bouquet photos, found ${premiumCount}`);
 
   const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
@@ -516,6 +516,6 @@ test('feature: bouquet page embeds the vendor-provided photo catalog locally ins
   assert.match(distHtml, /src="\.\/images\/bouquet\/basic\/2-1\.jpg"/);
   const distBasicDir = join(root, 'dist', 'images', 'bouquet', 'basic');
   const distPremiumDir = join(root, 'dist', 'images', 'bouquet', 'premium');
-  assert.strictEqual(readdirSync(distBasicDir).length, 26);
+  assert.strictEqual(readdirSync(distBasicDir).length, 27);
   assert.strictEqual(readdirSync(distPremiumDir).length, 12);
 });
