@@ -590,3 +590,17 @@ test('feature: 디자인바이리본 (invitation design) partner entry is regist
   const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
   assert.match(css, /\.bq-grid-tall\{/);
 });
+
+test('뉴벨 에스테틱 제휴 페이지가 목록 끝에 추가되고 주요 정보를 포함한다', () => {
+  const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(webHtml, /data-partner="newbelle"/);
+  assert.match(webHtml, /id="partner-newbelle"/);
+  assert.ok(webHtml.indexOf('data-partner="newbelle"') > webHtml.indexOf('data-partner="reborn"'));
+  const start = webHtml.indexOf('id="partner-newbelle"');
+  const page = webHtml.slice(start, webHtml.indexOf('</section>', start));
+  assert.match(page, /https:\/\/pf\.kakao\.com\/_xggZxhX/);
+  assert.match(page, /더뉴톡방 제휴 보고 연락드렸다/);
+  assert.match(page, /마곡중앙6로 11, 4층 407호/);
+  for (const price of ['88만원', '99만원', '109만원', '123만원']) assert.ok(page.includes(price));
+  assert.match(page, /선착순 <b>10명<\/b>/);
+});
