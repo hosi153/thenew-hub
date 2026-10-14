@@ -604,3 +604,14 @@ test('뉴벨 에스테틱 제휴 페이지가 목록 끝에 추가되고 주요 
   for (const price of ['88만원', '99만원', '109만원', '123만원']) assert.ok(page.includes(price));
   assert.match(page, /선착순 <b>10명<\/b>/);
 });
+
+test('홀 기본정보에 장부·방명록·연회장 배정이, 주차 안내에 모청 수정 안내가 있다', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const hall = html.slice(html.indexOf('id="sub-hallinfo"'), html.indexOf('id="sub-terms"'));
+  assert.match(hall, /축의금 장부/);
+  assert.match(hall, /무지 방명록/);
+  assert.match(hall, /1만원/);
+  assert.match(hall, /랜덤 배정/);
+  const park = html.slice(html.indexOf('id="sub-parking"'));
+  assert.match(park, /모바일 청첩장에 주차 요금을 적으신 분들/);
+});
