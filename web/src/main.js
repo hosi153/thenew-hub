@@ -283,7 +283,12 @@ async function applyPatches(){
   try{
     const rec = await db.collection('meta').doc('appliedPatches').get();
     applied = rec.exists ? (rec.data().ids || []) : [];
-  }catch(e){ applied = []; }
+  }catch(e){
+    /* Can't tell which patches already ran: do nothing rather than re-run old
+       edits and overwrite changes people made since. */
+    console.warn('appliedPatches unreadable, skipping patches:', e);
+    return;
+  }
 
   const pending = ADMIN_PATCHES.filter(p => !applied.includes(p.id));
   if(pending.length===0) return;

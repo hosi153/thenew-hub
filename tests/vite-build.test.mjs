@@ -629,3 +629,18 @@ test('식전영상·무빙포스터 제휴, 시안 사이트 링크, 양식 모�
   assert.doesNotMatch(html, /1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/);
   assert.match(html, /1, 2, 5층 태블릿 PC 주차등록 필수/);
 });
+
+test('bugfix: 저장·삭제는 REST 단일 경로로 확정하고, 읽기 경합으로 삭제된 항목이 되살아나지 않는다', () => {
+  const rest = readFileSync(join(root, 'web', 'src', 'data', 'firestore-rest.js'), 'utf8');
+  const repo = readFileSync(join(root, 'web', 'src', 'data', 'collection-repository.js'), 'utf8');
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  // no SDK write (its hidden retry queue could land after a newer REST write)
+  const writes = rest.slice(rest.indexOf('export async function writeWithFallback'), rest.indexOf('function fromFirestoreValue'));
+  assert.doesNotMatch(writes, /db\.collection/);
+  assert.match(writes, /firestoreRestExists/);
+  assert.match(writes, /delete-not-applied/);
+  assert.match(repo, /mutationEpoch/);
+  assert.match(repo, /deletedIds/);
+  assert.match(repo, /withoutDeleted\(snap\.docs/);
+  assert.match(main, /appliedPatches unreadable, skipping patches/);
+});

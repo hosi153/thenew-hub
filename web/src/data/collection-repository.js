@@ -21,6 +21,13 @@ export function createCollectionRepository(collectionName){
 
   let inFlightLoadAll = null;
   let lastLoadAllResult = null;
+  /* Bumped on every successful write/delete. A read that started before a
+     mutation may carry the OLD data (e.g. a slow full load still running when
+     the admin deletes an item), so such reads are re-run or filtered below
+     instead of letting them bring deleted items back. */
+  let mutationEpoch = 0;
+  const deletedIds = new Set();
+  const withoutDeleted = items => items.filter(item=>!deletedIds.has(item.id));
 
   return {
     async isEmpty(){
@@ -45,7 +52,7 @@ export function createCollectionRepository(collectionName){
       if(after) query = query.startAfter(after);
       const snap = await withTimeout(query.get(), 8000);
       return {
-        items: snap.docs.map(doc=>({id:doc.id, ...doc.data()})),
+        items: withoutDeleted(snap.docs.map(doc=>({id:doc.id, ...doc.data()}))),
         lastDoc: snap.docs.length ? snap.docs[snap.docs.length-1] : after,
         hasMore: snap.docs.length === limit,
       };
@@ -59,9 +66,17 @@ export function createCollectionRepository(collectionName){
     async loadAll(){
       if(inFlightLoadAll) return inFlightLoadAll;
       if(lastLoadAllResult) return lastLoadAllResult.slice();
-      inFlightLoadAll = readWithFallback(collectionName)
-        .then(items=>{ lastLoadAllResult = items; return items; })
-        .finally(()=>{ inFlightLoadAll = null; });
+      inFlightLoadAll = (async ()=>{
+        for(let attempt=0; ; attempt++){
+          const epochAtStart = mutationEpoch;
+          const items = withoutDeleted(await readWithFallback(collectionName));
+          if(epochAtStart === mutationEpoch || attempt >= 2){
+            if(epochAtStart === mutationEpoch) lastLoadAllResult = items;
+            return items;
+          }
+          /* something was saved/deleted while we were reading: read again */
+        }
+      })().finally(()=>{ inFlightLoadAll = null; });
       return inFlightLoadAll;
     },
     invalidateLoadAllCache(){
@@ -72,14 +87,18 @@ export function createCollectionRepository(collectionName){
       return collection().doc().id;
     },
 
-    save(id, data, onStatus){
+    async save(id, data, onStatus){
       lastLoadAllResult = null;
-      return writeWithFallback(collectionName, id, data, onStatus);
+      const result = await writeWithFallback(collectionName, id, data, onStatus);
+      if(result.ok){ mutationEpoch++; deletedIds.delete(id); lastLoadAllResult = null; }
+      return result;
     },
 
-    delete(id, onStatus){
+    async delete(id, onStatus){
       lastLoadAllResult = null;
-      return deleteWithFallback(collectionName, id, onStatus);
+      const result = await deleteWithFallback(collectionName, id, onStatus);
+      if(result.ok){ mutationEpoch++; deletedIds.add(id); lastLoadAllResult = null; }
+      return result;
     },
   };
 }
