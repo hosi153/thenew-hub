@@ -615,3 +615,17 @@ test('홀 기본정보에 장부·방명록·연회장 배정이, 주차 안내�
   const park = html.slice(html.indexOf('id="sub-parking"'));
   assert.match(park, /모바일 청첩장에 주차 요금을 적으신 분들/);
 });
+
+test('식전영상·무빙포스터 제휴, 시안 사이트 링크, 양식 모음 링크, 이대 주차등록 문구', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(html, /data-partner="preview"/);
+  assert.match(html, /data-partner="movingposter"/);
+  const pv = html.slice(html.indexOf('id="partner-preview"'), html.indexOf('id="partner-movingposter"'));
+  assert.match(pv, /30,000원/); assert.match(pv, /50,000원/); assert.match(pv, /vimeo\.com\/showcase\/12459307/);
+  const mp = html.slice(html.indexOf('id="partner-movingposter"'), html.indexOf('</section>', html.indexOf('id="partner-movingposter"')));
+  assert.match(mp, /9,900원/); assert.match(mp, /14,900원/); assert.match(mp, /vimeo\.com\/showcase\/12461589/);
+  assert.match(html, /https:\/\/wedding-sian\.hyokong\.workers\.dev/);
+  assert.match(html, /1tQ8U4sji1emNSdj7GHET2zZOV3CaNZtDYX8NdWXQp1k/);
+  assert.doesNotMatch(html, /1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/);
+  assert.match(html, /1, 2, 5층 태블릿 PC 주차등록 필수/);
+});
