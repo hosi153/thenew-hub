@@ -521,3 +521,7 @@
 
   .loading{ text-align:center; padding:50px 10px; color:var(--ink-soft); font-size:13px; }
   #hallLoadMoreSentinel, #codeLoadMoreSentinel{ padding:16px 10px; font-size:12px; min-height:1px; }
+
+/* 주차 안내: 이대서울병원 안내 이미지 색상 버전 3x3 그리드 */
+.parking-variant-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.parking-variant-grid img{width:100%; height:auto; display:block; border-radius:10px; cursor:zoom-in;}

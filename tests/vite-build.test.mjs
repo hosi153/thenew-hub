@@ -652,3 +652,11 @@ test('주차 안내: 이대서울병원 안내 이미지 색상 버전 10장 모
   for (const v of variants) assert.ok(existsSync(join(root, 'web', 'public', v.slice(1))), v);
   assert.ok(existsSync(join(root, 'web', 'public', 'images', 'parking-hospital-guide-1.jpg')));
 });
+
+test('주차 안내 색상 버전 9장은 3열 그리드로 배치된다', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  const grid = html.match(/<div class="parking-variant-grid">([\s\S]*?)<\/div>/)[1];
+  assert.equal((grid.match(/<img /g) || []).length, 9);
+  assert.match(css, /\.parking-variant-grid\{display:grid; grid-template-columns:repeat\(3,1fr\)/);
+});
