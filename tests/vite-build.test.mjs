@@ -644,3 +644,11 @@ test('bugfix: 저장·삭제는 REST 단일 경로로 확정하고, 읽기 경�
   assert.match(repo, /withoutDeleted\(snap\.docs/);
   assert.match(main, /appliedPatches unreadable, skipping patches/);
 });
+
+test('주차 안내: 이대서울병원 안내 이미지 색상 버전 10장 모두 등록', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const variants = html.match(/\/images\/parking-variants\/guide-\d+\.jpg/g) || [];
+  assert.equal(variants.length, 9);
+  for (const v of variants) assert.ok(existsSync(join(root, 'web', 'public', v.slice(1))), v);
+  assert.ok(existsSync(join(root, 'web', 'public', 'images', 'parking-hospital-guide-1.jpg')));
+});
