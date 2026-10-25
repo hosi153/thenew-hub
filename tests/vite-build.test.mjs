@@ -624,7 +624,7 @@ test('식전영상·무빙포스터 제휴, 시안 사이트 링크, 양식 모�
   assert.match(pv, /30,000원/); assert.match(pv, /50,000원/); assert.match(pv, /youtube\.com\/@%EB%AC%B4%EB%93%9C%EC%95%A4%ED%81%B4%EB%A6%AD/); assert.match(pv, /취향 맞춤 제작[\s\S]*80,000원/);
   const mp = html.slice(html.indexOf('id="partner-movingposter"'), html.indexOf('</section>', html.indexOf('id="partner-movingposter"')));
   assert.match(mp, /9,900원/); assert.match(mp, /14,900원/); assert.match(mp, /youtube\.com\/@%EB%AC%B4%EB%93%9C%EC%95%A4%ED%81%B4%EB%A6%AD/);
-  assert.match(html, /https:\/\/wedding-sian\.hyokong\.workers\.dev/);
+  assert.match(html, /https:\/\/wedding-sian\.moodnclick\.workers\.dev/);
   assert.match(html, /1tQ8U4sji1emNSdj7GHET2zZOV3CaNZtDYX8NdWXQp1k/);
   assert.doesNotMatch(html, /1jAxdrIgNK4D1kvH8wnavUbHKs0d5DN9wPjcJSLi5-_w/);
   assert.match(html, /1, 2, 5층 태블릿 PC 주차등록 필수/);
