@@ -384,7 +384,7 @@ test('feature: partner list is ordered with requested businesses pinned to the t
   assert.deepEqual(
     ids.slice(0, 6),
     ['dailyclean', 'hanbok', 'invite', 'daege', 'daegeretouch', 'onto'],
-    '매일크린/느와한복/메리지포켓/대게 사진관/대게 보정공장/온투필름 순으로 최상단에 있어야 함',
+    '매일크린/느와한복/메리지포켓/Marée 마레(구 대게 사진관)/대게 보정공장/온투필름 순으로 최상단에 있어야 함',
   );
 });
 
