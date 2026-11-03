@@ -660,3 +660,14 @@ test('주차 안내 색상 버전 9장은 3열 그리드로 배치된다', () =>
   assert.equal((grid.match(/<img /g) || []).length, 9);
   assert.match(css, /\.parking-variant-grid\{display:grid; grid-template-columns:repeat\(3,1fr\)/);
 });
+
+test('매일크린 유료 옵션 카드 (수전소독/컬비/새집증후군/마루광택코팅)', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('id="partner-dailyclean"');
+  const page = html.slice(start, html.indexOf('id="partner-reborn"'));
+  assert.match(page, /유료 옵션/);
+  assert.match(page, /수전소독[\s\S]*7만원[\s\S]*<b>4만원<\/b>/);
+  assert.match(page, /컬비 사용[\s\S]*15만원/);
+  assert.match(page, /새집증후군 시공[\s\S]*10만원~/);
+  assert.match(page, /마루광택코팅[\s\S]*11,000원/);
+});
