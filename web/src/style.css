@@ -153,6 +153,8 @@
   .card .row:last-child{ border-bottom:none; }
   .card .row span:first-child{ color:var(--ink-soft); flex-shrink:0; }
   .card .row span:last-child{ font-weight:600; text-align:right; }
+  /* 한글 단어 중간(예: 수전코/팅)에서 줄이 바뀌지 않게: 공백에서만 줄바꿈, 정말 긴 문자열만 강제 줄바꿈 */
+  .card .row span{ word-break:keep-all; overflow-wrap:break-word; }
   .card .actions{ display:flex; gap:8px; margin-top:12px; }
 
   .btn{

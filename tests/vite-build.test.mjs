@@ -682,3 +682,19 @@ test('매일크린 청소 안내 이미지 8장 등록 (2열 그리드, 확대 �
   assert.equal((page.match(/data-action="bouquet-zoom"/g) || []).length, 8);
   assert.match(page, /partner-img-grid/);
 });
+
+test('매일크린 유료 옵션마다 설명이 포함된다', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('<h3>유료 옵션</h3>');
+  const card = html.slice(start, html.indexOf('</div>\n\n      <div class="card">\n        <h3>청소 안내</h3>', start));
+  assert.equal((card.match(/<p class="muted"/g) || []).length, 4);
+  assert.match(card, /물갈이/);
+  assert.match(card, /헤파필터/);
+  assert.match(card, /차폐식[\s\S]*광촉매[\s\S]*활성탄/);
+  assert.match(card, /UV 베이스/);
+});
+
+test('카드 행(.row)의 한글이 단어 중간에서 줄바꿈되지 않는다', () => {
+  const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
+  assert.match(css, /\.card \.row span\{ word-break:keep-all; overflow-wrap:break-word; \}/);
+});
