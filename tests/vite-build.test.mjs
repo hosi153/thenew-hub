@@ -671,3 +671,14 @@ test('매일크린 유료 옵션 카드 (수전소독/컬비/새집증후군/마
   assert.match(page, /새집증후군 시공[\s\S]*10만원~/);
   assert.match(page, /마루광택코팅[\s\S]*11,000원/);
 });
+
+test('매일크린 청소 안내 이미지 8장 등록 (2열 그리드, 확대 가능)', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('id="partner-dailyclean"');
+  const page = html.slice(start, html.indexOf('id="partner-reborn"'));
+  const imgs = page.match(/\/images\/partners\/dailyclean\/0\d\.jpg/g) || [];
+  assert.equal(imgs.length, 8);
+  for (const v of imgs) assert.ok(existsSync(join(root, 'web', 'public', v.slice(1))), v);
+  assert.equal((page.match(/data-action="bouquet-zoom"/g) || []).length, 8);
+  assert.match(page, /partner-img-grid/);
+});

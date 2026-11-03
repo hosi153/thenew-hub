@@ -525,3 +525,7 @@
 /* 주차 안내: 이대서울병원 안내 이미지 색상 버전 3x3 그리드 */
 .parking-variant-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
 .parking-variant-grid img{width:100%; height:auto; display:block; border-radius:10px; cursor:zoom-in;}
+
+/* 제휴업체 안내 이미지 2열 그리드 */
+.partner-img-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+.partner-img-grid img{width:100%; height:auto; display:block; border-radius:10px; cursor:zoom-in;}
