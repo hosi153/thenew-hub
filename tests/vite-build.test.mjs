@@ -698,3 +698,12 @@ test('카드 행(.row)의 한글이 단어 중간에서 줄바꿈되지 않는�
   const css = readFileSync(join(root, 'web', 'src', 'style.css'), 'utf8');
   assert.match(css, /\.card \.row span\{ word-break:keep-all; overflow-wrap:break-word; \}/);
 });
+
+test('식전영상·무빙포스터 문의 링크는 카카오톡 채널(_bFLmX)이다', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('id="partner-preview"');
+  const page = html.slice(start, html.indexOf('</section>', start));
+  assert.equal((page.match(/http:\/\/pf\.kakao\.com\/_bFLmX/g) || []).length, 2);
+  assert.doesNotMatch(html, /open\.kakao\.com\/o\/s7M7jxNi/);
+  assert.doesNotMatch(page, /오픈프로필/);
+});
