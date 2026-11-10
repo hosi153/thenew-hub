@@ -707,3 +707,13 @@ test('식전영상·무빙포스터 문의 링크는 카카오톡 채널(_bFLmX)
   assert.doesNotMatch(html, /open\.kakao\.com\/o\/s7M7jxNi/);
   assert.doesNotMatch(page, /오픈프로필/);
 });
+
+test('대게 보정공장 상담 링크는 sqhPztWi, 마레 스냅 상담 링크는 기존대로 유지', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('id="partner-daegeretouch"');
+  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  assert.match(page, /https:\/\/open\.kakao\.com\/o\/sqhPztWi/);
+  assert.doesNotMatch(page, /sHiAqz0h/);
+  const daege = html.slice(html.indexOf('id="partner-daege"'), start);
+  assert.match(daege, /https:\/\/open\.kakao\.com\/o\/sHiAqz0h/);
+});
