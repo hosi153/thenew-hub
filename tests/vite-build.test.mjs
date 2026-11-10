@@ -384,7 +384,7 @@ test('feature: partner list is ordered with requested businesses pinned to the t
   assert.deepEqual(
     ids.slice(0, 6),
     ['dailyclean', 'hanbok', 'invite', 'daege', 'daegeretouch', 'onto'],
-    '매일크린/느와한복/메리지포켓/Marée 마레(구 대게 사진관)/대게 보정공장/온투필름 순으로 최상단에 있어야 함',
+    '매일크린/느와한복/메리지포켓/Marée 마레(구 대게 사진관)/대부 보정공장/온투필름 순으로 최상단에 있어야 함',
   );
 });
 
@@ -732,4 +732,10 @@ test('대게 보정공장: 수정 요청 조건(한 달 이내, 3회)과 생성 
   const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
   assert.match(page, /수정 요청[\s\S]*한 달 이내[\s\S]*재수정[\s\S]*3회 이내/);
   assert.match(page, /새로 생성하는 보정은 불가/);
+});
+
+test('보정공장 이름은 "대부 보정공장"으로 표기된다', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.equal((html.match(/대부 보정공장/g) || []).length, 2);
+  assert.doesNotMatch(html, /대게 보정공장/);
 });
