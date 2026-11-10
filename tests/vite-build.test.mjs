@@ -717,3 +717,11 @@ test('대게 보정공장 상담 링크는 sqhPztWi, 마레 스냅 상담 링크
   const daege = html.slice(html.indexOf('id="partner-daege"'), start);
   assert.match(daege, /https:\/\/open\.kakao\.com\/o\/sHiAqz0h/);
 });
+
+test('대게 보정공장: 촬영 상품 구매자 할인 항목이 없다', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('id="partner-daegeretouch"');
+  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  assert.doesNotMatch(page, /촬영 상품 구매자/);
+  assert.match(page, /1장당 4,000원/);
+});
