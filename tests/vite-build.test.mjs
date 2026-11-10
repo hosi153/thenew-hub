@@ -739,3 +739,10 @@ test('보정공장 이름은 "대부 보정공장"으로 표기된다', () => {
   assert.equal((html.match(/대부 보정공장/g) || []).length, 2);
   assert.doesNotMatch(html, /대게 보정공장/);
 });
+
+test('대부 보정공장: 최소 5장부터 보정 가능 안내', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const start = html.indexOf('id="partner-daegeretouch"');
+  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  assert.match(page, /최소 보정[\s\S]*<b>5장<\/b>부터 가능/);
+});
