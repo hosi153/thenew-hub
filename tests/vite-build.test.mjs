@@ -746,3 +746,14 @@ test('대부 보정공장: 최소 5장부터 보정 가능 안내', () => {
   const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
   assert.match(page, /최소 보정[\s\S]*<b>5장<\/b>부터 가능/);
 });
+
+test('RH테일러 마곡점 제휴 페이지: 목록 끝에 추가, 가격·할인·링크 포함', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(html, /data-partner="rhtailor"/);
+  assert.ok(html.indexOf('data-partner="rhtailor"') > html.indexOf('data-partner="movingposter"'));
+  const start = html.indexOf('id="partner-rhtailor"');
+  const page = html.slice(start, html.indexOf('</section>', start));
+  for (const t of ['60만원', '70만원', '90만원', '100만원', '185만원', '15만원', '49만원', '2만원', '최대 <b>4만원</b>', '더뉴톡방제휴']) assert.ok(page.includes(t), t);
+  assert.match(page, /https:\/\/pf\.kakao\.com\/_UgFtK/);
+  assert.match(page, /https:\/\/www\.instagram\.com\/rh_tailor_/);
+});
