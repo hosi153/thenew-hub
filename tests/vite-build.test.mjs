@@ -757,3 +757,15 @@ test('RH테일러 마곡점 제휴 페이지: 목록 끝에 추가, 가격·할�
   assert.match(page, /https:\/\/pf\.kakao\.com\/_UgFtK/);
   assert.match(page, /https:\/\/www\.instagram\.com\/rh_tailor_/);
 });
+
+test('발리오소 인천점 제휴 페이지: 목록 끝, 패키지·소개코드·링크 포함', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(html, /data-partner="valioso"/);
+  assert.ok(html.indexOf('data-partner="valioso"') > html.indexOf('data-partner="rhtailor"'));
+  const start = html.indexOf('id="partner-valioso"');
+  const page = html.slice(start, html.indexOf('</section>', start));
+  for (const t of ['120만원~', '50만원', '60만원', '64만원', '20% 할인', '270620더뉴', '3만원', '태현빌딩']) assert.ok(page.includes(t), t);
+  assert.match(page, /tel:0507-1354-4802/);
+  assert.match(page, /https:\/\/naver\.me\/xT7uLLnE/);
+  assert.match(page, /https:\/\/www\.instagram\.com\/_valioso/);
+});
