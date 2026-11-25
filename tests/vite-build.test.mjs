@@ -822,3 +822,9 @@ test('정우리웨딩보정 제휴 제거', () => {
   const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   assert.doesNotMatch(html, /jungwoori|정우리/);
 });
+
+test('한복과 혼주한복은 하나의 "한복" 카테고리로 통합', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /<span class="(hall-badge|tag)">혼주한복<\/span>/);
+  assert.match(html, /data-partner="sarak"><td><b>사락한복<\/b><\/td><td><span class="hall-badge">한복<\/span>/);
+});
