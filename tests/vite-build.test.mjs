@@ -711,7 +711,7 @@ test('식전영상·무빙포스터 문의 링크는 카카오톡 채널(_bFLmX)
 test('대게 보정공장 상담 링크는 sqhPztWi, 마레 스냅 상담 링크는 기존대로 유지', () => {
   const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const start = html.indexOf('id="partner-daegeretouch"');
-  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  const page = html.slice(start, html.indexOf('id="partner-marketb"'));
   assert.match(page, /https:\/\/open\.kakao\.com\/o\/sqhPztWi/);
   assert.doesNotMatch(page, /sHiAqz0h/);
   const daege = html.slice(html.indexOf('id="partner-daege"'), start);
@@ -721,7 +721,7 @@ test('대게 보정공장 상담 링크는 sqhPztWi, 마레 스냅 상담 링크
 test('대게 보정공장: 촬영 상품 구매자 할인 항목이 없다', () => {
   const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const start = html.indexOf('id="partner-daegeretouch"');
-  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  const page = html.slice(start, html.indexOf('id="partner-marketb"'));
   assert.doesNotMatch(page, /촬영 상품 구매자/);
   assert.match(page, /1장당 4,000원/);
 });
@@ -729,7 +729,7 @@ test('대게 보정공장: 촬영 상품 구매자 할인 항목이 없다', () 
 test('대게 보정공장: 수정 요청 조건(한 달 이내, 3회)과 생성 불가 안내', () => {
   const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const start = html.indexOf('id="partner-daegeretouch"');
-  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  const page = html.slice(start, html.indexOf('id="partner-marketb"'));
   assert.match(page, /수정 요청[\s\S]*한 달 이내[\s\S]*재수정[\s\S]*3회 이내/);
   assert.match(page, /새로 생성하는 보정은 불가/);
 });
@@ -743,7 +743,7 @@ test('보정공장 이름은 "대부 보정공장"으로 표기된다', () => {
 test('대부 보정공장: 최소 5장부터 보정 가능 안내', () => {
   const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   const start = html.indexOf('id="partner-daegeretouch"');
-  const page = html.slice(start, html.indexOf('id="partner-jungwoori"'));
+  const page = html.slice(start, html.indexOf('id="partner-marketb"'));
   assert.match(page, /최소 보정[\s\S]*<b>5장<\/b>부터 가능/);
 });
 
@@ -816,4 +816,9 @@ test('관리자 비밀번호는 salt가 있는 PBKDF2 해시로 저장 (약한 S
   const hash = src.match(/ADMIN_PW_HASH = '([0-9a-f]+)'/)[1];
   const { pbkdf2Sync } = await import('node:crypto');
   assert.equal(pbkdf2Sync('thenew2026', Buffer.from(salt, 'hex'), 210000, 32, 'sha256').toString('hex'), hash);
+});
+
+test('정우리웨딩보정 제휴 제거', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /jungwoori|정우리/);
 });
