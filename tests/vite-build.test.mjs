@@ -555,7 +555,7 @@ test('feature: 디자인바이리본 (invitation design) partner entry is regist
   assert.match(webHtml, /89,000원~/);
   assert.match(webHtml, /디자인 봉투 100매 증정/);
 
-  const reborn = webHtml.slice(webHtml.indexOf('id="partner-reborn"'), webHtml.indexOf('</section>', webHtml.indexOf('id="partner-reborn"')));
+  const reborn = webHtml.slice(webHtml.indexOf('id="partner-reborn"'), webHtml.indexOf('id="partner-newbelle"'));
   // the vendor's "1단 세로"/"1단 가로" sheets and "1단 세로형"/"1단 가로형" sheets
   // turned out to show the same designs re-exported in a different sheet
   // template, so only the (nicer-looking) "~형" versions are kept — 4 sheets
@@ -768,4 +768,17 @@ test('발리오소 인천점 제휴 페이지: 목록 끝, 패키지·소개코�
   assert.match(page, /tel:0507-1354-4802/);
   assert.match(page, /https:\/\/naver\.me\/xT7uLLnE/);
   assert.match(page, /https:\/\/www\.instagram\.com\/_valioso/);
+});
+
+test('사락한복 제휴 페이지: 목록 끝, 가격·혜택·링크·포스터 포함', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.match(html, /data-partner="sarak"/);
+  assert.ok(html.indexOf('data-partner="sarak"') > html.indexOf('data-partner="valioso"'));
+  const start = html.indexOf('id="partner-sarak"');
+  const page = html.slice(start, html.indexOf('</section>', start));
+  for (const t of ['70만원', '80만원', '50만원', '30만원', '90만원', '10만원', '5%', '20일 전까지', '온누리상품권', '청담동 83-12']) assert.ok(page.includes(t), t);
+  assert.match(page, /https:\/\/open\.kakao\.com\/o\/sMsDCoVi/);
+  assert.match(page, /https:\/\/m\.sarakhanbok\.com\/product\/list\.html\?cate_no=106/);
+  assert.match(page, /tel:010-3983-1872/);
+  assert.ok(existsSync(join(root, 'web', 'public', 'images', 'partners', 'sarak', 'poster.jpg')));
 });
