@@ -792,3 +792,18 @@ test('Firebase는 CDN이 아닌 번들, 보안 규칙 파일 존재', () => {
   assert.match(rules, /match \/\{document=\*\*\}/);
   assert.match(rules, /allow read, write: if false/);
 });
+
+test('리뉴얼: 홈 바로가기, 제휴 필터, 그룹화된 정보 탭, 확대 허용, 뒤로가기 기록', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  assert.match(html, /class="quick-grid"/);
+  assert.match(html, /goSub\('parking'\)/);
+  assert.match(html, /id="partnerSearch"/);
+  assert.match(html, /id="partnerChips"/);
+  assert.match(html, /class="group-title">예식장 이용/);
+  assert.doesNotMatch(html, /maximum-scale/);
+  assert.match(html, /rel="noopener noreferrer"/);
+  assert.match(main, /popstate/);
+  assert.match(main, /pushState/);
+  assert.ok(existsSync(join(root, 'web', 'src', 'features', 'partners', 'filter.js')));
+});

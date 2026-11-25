@@ -2,9 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>더뉴컨벤션 예신예랑 정보공유</title>
+<meta name="theme-color" content="#f4f5f8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/src/style.css">
 </head>
@@ -27,6 +29,21 @@
   <!-- ================= HOME ================= -->
   <section class="page active" id="page-home">
     <div class="kicker">OVERVIEW</div><div class="section-title">홈</div>
+
+    <div class="card" id="weekCard" style="display:none;">
+      <h3>🎉 이번 주 예식이 있어요</h3>
+      <div id="weekList"></div>
+    </div>
+
+    <div class="quick-grid" aria-label="바로가기">
+      <button class="quick-btn" type="button" onclick="goSub('parking')"><span class="qi" aria-hidden="true">🚗</span><span class="qt">주차 안내</span><span class="qs">만차 시 이대서울병원</span></button>
+      <button class="quick-btn" type="button" onclick="go('halls')"><span class="qi" aria-hidden="true">📅</span><span class="qt">홀 일정</span><span class="qs">달력·목록</span></button>
+      <button class="quick-btn" type="button" onclick="go('codes')"><span class="qi" aria-hidden="true">🔑</span><span class="qt">짝꿍코드</span><span class="qs">업체별 소개코드</span></button>
+      <button class="quick-btn" type="button" onclick="go('partners')"><span class="qi" aria-hidden="true">🤝</span><span class="qt">제휴업체</span><span class="qs">할인·혜택</span></button>
+      <button class="quick-btn" type="button" onclick="goSub('checklist')"><span class="qi" aria-hidden="true">📝</span><span class="qt">준비 체크리스트</span><span class="qs">예식 준비 공유</span></button>
+      <button class="quick-btn" type="button" onclick="goSub('hallinfo')"><span class="qi" aria-hidden="true">🏛️</span><span class="qt">홀 기본정보</span><span class="qs">BGM·식순·안내</span></button>
+    </div>
+
     <div class="card">
       <span class="tag">공지</span>
       <p>견적 공유는 삼가주세요.</p>
@@ -36,38 +53,22 @@
 
     <div class="card">
       <h3>새로 열린 제휴 혜택</h3>
-      <div style="display:flex; align-items:center; gap:9px; margin:9px 0 3px;">
-        <span class="tag" style="margin:0;">사회</span><b style="font-size:13.5px;">조유진mc</b>
-      </div>
-      <p class="muted" style="margin:0 0 12px;">진행비 10% 할인 + 음원 무료 제공</p>
-      <div style="display:flex; align-items:center; gap:9px; margin:9px 0 3px;">
-        <span class="tag" style="margin:0;">한복</span><b style="font-size:13.5px;">느와한복</b>
-      </div>
-      <p class="muted" style="margin:0 0 12px;">혼주한복 25만원·신랑신부 40만원 (~26.12.31 예약분)</p>
-      <div style="display:flex; align-items:center; gap:9px; margin:9px 0 3px;">
-        <span class="tag" style="margin:0;">청첩장</span><b style="font-size:13.5px;">메리지포켓</b>
-      </div>
-      <p class="muted" style="margin:0;">종이·모바일 청첩장 제휴 할인</p>
+      <div class="benefit"><span class="tag">사회</span><b>조유진mc</b></div>
+      <p class="muted benefit-sub">진행비 10% 할인 + 음원 무료 제공</p>
+      <div class="benefit"><span class="tag">한복</span><b>느와한복</b></div>
+      <p class="muted benefit-sub">혼주한복 25만원·신랑신부 40만원 (~26.12.31 예약분)</p>
+      <div class="benefit"><span class="tag">청첩장</span><b>메리지포켓</b></div>
+      <p class="muted benefit-sub last">종이·모바일 청첩장 제휴 할인</p>
       <button class="btn btn-ghost btn-block" onclick="go('partners')" style="margin-top:8px;">제휴업체 전체 보기</button>
     </div>
 
-    <div class="card">
-      <h3>톡방 이용 안내</h3>
+    <details class="card fold">
+      <summary><h3>톡방 이용 안내</h3></summary>
       <p>닉네임은 <b>예식년월+닉네임 / 웨딩홀 이름</b>으로 설정해주세요.</p>
       <p class="muted">예: 2606 대게신랑 / 더뉴홀 · 미설정 시 강제 퇴장될 수 있어요.</p>
       <p>사담이 많으니 알림은 꺼두는 걸 추천드려요. 질문은 언제든 환영입니다.</p>
       <p class="muted">평일 9~18시가 가장 활발하고, 이후엔 조용해지는 편이에요.</p>
-    </div>
-
-    <div class="card" id="weekCard" style="display:none;">
-      <h3>🎉 이번 주 예식이 있어요</h3>
-      <div id="weekList"></div>
-    </div>
-
-    <div class="row2" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:130px;">
-      <button class="btn btn-outline" onclick="go('halls')">홀 일정 보기</button>
-      <button class="btn btn-outline" onclick="go('codes')">짝꿍코드 보기</button>
-    </div>
+    </details>
   </section>
 
   <!-- ================= HALL SCHEDULE ================= -->
@@ -124,6 +125,9 @@
       <div class="kicker">PARTNERS</div><div class="section-title">제휴 업체 정보</div>
       <p class="section-sub">더뉴컨벤션 예신예랑 오픈카톡방에서 개인적으로 소개해드리는 제휴 업체입니다. 행을 눌러 상세내용을 확인하세요.</p>
       <p class="muted" style="margin:-8px 0 14px; font-size:12px;">※ 본 제휴는 더뉴컨벤션(예식장) 공식 제휴가 아닌, 오픈카톡방 운영자 개인이 안내해드리는 업체입니다. 이용 관련 문의·환불·CS는 각 업체로 직접 연락해주세요.</p>
+      <input type="search" id="partnerSearch" class="search" placeholder="업체명 / 카테고리 검색" aria-label="제휴업체 검색" autocomplete="off">
+      <div class="chips" id="partnerChips" role="group" aria-label="카테고리 필터"></div>
+      <p class="muted" id="partnerEmpty" style="display:none; text-align:center; padding:18px 0;">조건에 맞는 업체가 없어요.</p>
       <div class="table-wrap">
         <table class="list-table">
           <thead><tr><th>업체명</th><th>카테고리</th></tr></thead>
@@ -981,16 +985,23 @@
 
     <div id="more-menu">
       <div class="kicker">RESOURCES</div><div class="section-title">정보 모음</div>
+      <div class="group-title">예식장 이용</div>
       <div class="info-list">
+        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="parking"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="hallinfo"><span class="l"><span class="dot"></span>홀 기본정보</span><span class="arrow">›</span></div>
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="terms"><span class="l"><span class="dot"></span>용어 설명</span><span class="arrow">›</span></div>
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="bouquet"><span class="l"><span class="dot"></span>부케 안내</span><span class="arrow">›</span></div>
-        <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="parking"><span class="l"><span class="dot"></span>주차 안내</span><span class="arrow">›</span></div>
+      </div>
+      <div class="group-title">예식 준비</div>
+      <div class="info-list">
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="checklist"><span class="l"><span class="dot"></span>예식 준비 체크리스트</span><span class="arrow">›</span></div>
         <div class="info-link" role="button" tabindex="0" data-action="subpage" data-subpage="insta"><span class="l"><span class="dot"></span>인스타 공유</span><span class="arrow">›</span></div>
-        <a class="info-link" href="https://docs.google.com/spreadsheets/d/1tQ8U4sji1emNSdj7GHET2zZOV3CaNZtDYX8NdWXQp1k/edit?usp=sharing" target="_blank"><span class="l"><span class="dot"></span>예식 양식 모음</span><span class="arrow">↗</span></a>
-        <a class="info-link" href="https://drive.google.com/drive/folders/1sFr7egHVGCvKwgTpKY7B2ZO310Ecx5-D?usp=drive_link" target="_blank"><span class="l"><span class="dot"></span>예식 음원 모음</span><span class="arrow">↗</span></a>
-        <a class="info-link" href="https://wedding-sian.moodnclick.workers.dev" target="_blank"><span class="l"><span class="dot"></span>웨딩촬영 시안 제작 사이트 (무료)</span><span class="arrow">↗</span></a>
+      </div>
+      <div class="group-title">자료 모음 (외부 링크)</div>
+      <div class="info-list">
+        <a class="info-link" href="https://docs.google.com/spreadsheets/d/1tQ8U4sji1emNSdj7GHET2zZOV3CaNZtDYX8NdWXQp1k/edit?usp=sharing" target="_blank" rel="noopener noreferrer"><span class="l"><span class="dot"></span>예식 양식 모음</span><span class="arrow">↗</span></a>
+        <a class="info-link" href="https://drive.google.com/drive/folders/1sFr7egHVGCvKwgTpKY7B2ZO310Ecx5-D?usp=drive_link" target="_blank" rel="noopener noreferrer"><span class="l"><span class="dot"></span>예식 음원 모음</span><span class="arrow">↗</span></a>
+        <a class="info-link" href="https://wedding-sian.moodnclick.workers.dev" target="_blank" rel="noopener noreferrer"><span class="l"><span class="dot"></span>웨딩촬영 시안 제작 사이트 (무료)</span><span class="arrow">↗</span></a>
       </div>
     </div>
 
@@ -1434,7 +1445,7 @@
 <!-- ---------------- Checklist Detail (read-only, table) ---------------- -->
 <div class="overlay" id="bqLightboxOverlay" aria-hidden="true">
   <button type="button" class="bq-lightbox-close" aria-label="닫기" onclick="closeBouquetLightbox()">✕</button>
-  <img id="bqLightboxImg" src="" alt="부케 확대 이미지">
+  <img loading="lazy" decoding="async" id="bqLightboxImg" src="" alt="부케 확대 이미지">
 </div>
 
 <div class="overlay" id="checklistDetailOverlay" aria-hidden="true">

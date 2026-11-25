@@ -260,9 +260,12 @@ let isUsingSeedFallback = false;
 import { writeWithFallback, deleteWithFallback, mergeWithFallback, readWithFallback, withTimeout } from './data/firestore-rest.js';
 
 import { createPasswordFields } from './security/password.js';
+import { initPartnerFilter } from './features/partners/filter.js';
 
 /* ============ GENERIC PASSWORD PROMPT (Promise-based) ============ */
 import { showOverlay, hideOverlay, cancelPwPrompt, submitPwPrompt, verify } from './ui/modal.js';
+
+initPartnerFilter();
 
 /* ============ INIT ============ */
 async function init(){
@@ -313,6 +316,12 @@ async function init(){
 import { toast } from './ui/toast.js';
 
 /* ============ NAV ============ */
+/* 같은 위치면 기록을 쌓지 않고, 다르면 pushState로 뒤로가기가 가능하게 한다 */
+function pushHash(h){
+  if(!history.pushState) return;
+  if(location.hash === '#'+h) return;
+  history.pushState(null, '', '#'+h);
+}
 function go(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -324,7 +333,7 @@ function go(page){
   if(navBtn){ navBtn.classList.add('active'); navBtn.setAttribute('aria-current','page'); }
   document.getElementById('fab').style.display = (page==='halls'||page==='codes') ? 'flex' : 'none';
   window.scrollTo(0,0);
-  if(history.replaceState) history.replaceState(null, '', '#'+page);
+  pushHash(page);
 
   // iOS Safari sometimes fails to paint list content that was set via innerHTML
   // while its container was hidden (display:none). Re-rendering at the exact
@@ -349,22 +358,29 @@ document.getElementById('fab').style.display='none';
                                    (once its data has loaded; prompts for a
                                    password first if the entry is private) */
 let pendingChecklistDeepLinkId = null;
-(function(){
+function routeFromHash(){
   const valid = ['home','halls','codes','partners','more'];
   const raw = (location.hash || '').replace('#','');
   const [page, sub, subId] = raw.split('/');
   if(!valid.includes(page)) return;
   go(page);
-  if(!sub) return;
   if(page==='partners'){
-    setTimeout(()=>openPartner(decodeURIComponent(sub)), 0);
+    if(sub) setTimeout(()=>openPartner(decodeURIComponent(sub)), 0);
+    else closePartner();
     return;
   }
-  if(page==='more' && ['hallinfo','terms','bouquet','parking','checklist','insta'].includes(sub)){
-    setTimeout(()=>openSub(sub), 0);
-    if(sub==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
+  if(page==='more'){
+    if(sub && ['hallinfo','terms','bouquet','parking','checklist','insta'].includes(sub)){
+      setTimeout(()=>openSub(sub), 0);
+      if(sub==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
+    }else closeSub();
   }
-})();
+}
+routeFromHash();
+/* 뒤로가기/앞으로가기: 탭·상세 화면 이동이 브라우저 기록에 쌓이므로 그대로 따라간다 */
+window.addEventListener('popstate', routeFromHash);
+function goSub(name){ go('more'); openSub(name); }
+window.goSub = goSub;
 
 function openPartner(name){
   const target = document.getElementById('partner-'+name);
@@ -373,6 +389,8 @@ function openPartner(name){
   document.querySelectorAll('#page-partners .subpage').forEach(s=>s.classList.remove('active'));
   target.classList.add('active');
   ensurePartnerLinkButton(target, name);
+  pushHash('partners/'+name);
+  window.scrollTo(0,0);
 }
 /* Every partner detail page — present and future — automatically gets a
    "링크 복사" button, injected once right after its back-link, instead of
@@ -406,6 +424,7 @@ async function copyPartnerLink(partnerId){
 }
 function closePartner(){
   document.getElementById('partners-menu').style.display='block';
+  if(location.hash.startsWith('#partners/')) history.replaceState(null,'','#partners');
   document.querySelectorAll('#page-partners .subpage').forEach(s=>s.classList.remove('active'));
 }
 
@@ -413,9 +432,12 @@ function openSub(name){
   document.getElementById('more-menu').style.display='none';
   document.querySelectorAll('.subpage').forEach(s=>s.classList.remove('active'));
   document.getElementById('sub-'+name).classList.add('active');
+  pushHash('more/'+name);
+  window.scrollTo(0,0);
 }
 function closeSub(){
   document.getElementById('more-menu').style.display='block';
+  if(location.hash.startsWith('#more/')) history.replaceState(null,'','#more');
   document.querySelectorAll('.subpage').forEach(s=>s.classList.remove('active'));
 }
 
