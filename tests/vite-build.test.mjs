@@ -341,7 +341,8 @@ test('feature: Instagram-share list exists with 닉네임/인스타 아이디/�
   assert.match(main, /initializeInstaShares\(\)/);
   assert.match(main, /renderInstaList\(\);/);
   assert.match(main, /action==='insta-detail'\) openInstaDetail\(target\.dataset\.id\)/);
-  assert.match(main, /'hallinfo','terms','bouquet','parking','checklist','insta'/);
+  assert.match(main, /function resolveSubKey/);
+  assert.match(main, /subName==='checklist' && subId/);
 });
 
 test('bugfix: insta share list wraps long underscore-heavy handles instead of overflowing horizontally', () => {
@@ -403,10 +404,10 @@ test('feature: 매일크린 (move-in cleaning) partner entry is registered with 
 
 test('feature: every partner detail page gets a shareable #partners/<id> link, not just the newest one', () => {
   const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
-  assert.match(main, /if\(page==='partners'\)\{[\s\S]*?openPartner\(decodeURIComponent\(sub\)\)/);
+  assert.match(main, /if\(page==='partners'\)\{[\s\S]*?openPartner\(resolvePartnerKey\(decodeURIComponent\(sub\)\)\)/);
   assert.match(main, /function ensurePartnerLinkButton\(subpageEl, partnerId\)/);
   assert.match(main, /async function copyPartnerLink\(partnerId\)/);
-  assert.match(main, /#partners\/\$\{encodeURIComponent\(partnerId\)\}/);
+  assert.match(main, /#partners\/\$\{encodeURIComponent\(seqOf\('#partner-'\+partnerId\)\|\|partnerId\)\}/);
   // The link icon is appended next to the partner name (first <h3>), not as
   // a separate full-width block button — small icon, inline with the title.
   const injectorBody = main.slice(
@@ -439,15 +440,15 @@ test('feature: checklist entries have a shareable deep-link URL', () => {
   // #more/checklist and #more/checklist/<id> must both be recognized by the
   // deep-link router, and a pending entry id must be opened only after
   // checklist data has actually loaded (not synchronously at parse time).
-  assert.match(main, /'hallinfo','terms','bouquet','parking','checklist'/);
+  assert.match(main, /function resolveSubKey/);
   assert.match(main, /let pendingChecklistDeepLinkId = null;/);
   assert.match(main, /pendingChecklistDeepLinkId = decodeURIComponent\(subId\);/);
-  const initBody = main.slice(main.indexOf('async function init()'), main.indexOf('\n\n\nimport'));
+  const initBody = main.slice(main.indexOf('async function init()'), main.indexOf('async function init()') + 4000);
   assert.match(initBody, /if\(pendingChecklistDeepLinkId\)\{[\s\S]*?openChecklistDetail\(targetId\);/);
 
   const checklistView = readFileSync(join(root, 'web', 'src', 'features', 'checklist', 'view.js'), 'utf8');
   assert.match(checklistView, /export async function copyChecklistLink\(\)/);
-  assert.match(checklistView, /#more\/checklist\/\$\{encodeURIComponent\(item\.id\)\}/);
+  assert.match(checklistView, /#more\/5\/\$\{encodeURIComponent\(item\.id\)\}/);
 
   const webHtml = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   assert.match(webHtml, /onclick="copyChecklistLink\(\)"/);
@@ -826,5 +827,18 @@ test('정우리웨딩보정 제휴 제거', () => {
 test('한복과 혼주한복은 하나의 "한복" 카테고리로 통합', () => {
   const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
   assert.doesNotMatch(html, /<span class="(hall-badge|tag)">혼주한복<\/span>/);
-  assert.match(html, /data-partner="sarak"><td><b>사락한복<\/b><\/td><td><span class="hall-badge">한복<\/span>/);
+  assert.match(html, /data-partner="sarak" data-seq="20"><td><b>사락한복<\/b><\/td><td><span class="hall-badge">한복<\/span>/);
+});
+
+test('모든 경로는 seq(일련번호) 기반, 예전 키워드 링크도 호환', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  const rows = html.match(/data-action="partner" data-partner="[a-z0-9]+" data-seq="\d+"/g) || [];
+  assert.equal(rows.length, (html.match(/data-action="partner" data-partner=/g) || []).length);
+  const seqs = rows.map(r => r.match(/data-seq="(\d+)"/)[1]);
+  assert.equal(new Set(seqs).size, seqs.length, 'seq는 중복 없이 고유해야 함');
+  assert.match(html, /id="partner-sarak" data-seq="20"/);
+  assert.match(html, /id="sub-parking" data-seq="1"/);
+  assert.match(main, /resolvePartnerKey/);
+  assert.match(main, /resolveSubKey/);
 });

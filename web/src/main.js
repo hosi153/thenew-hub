@@ -351,13 +351,31 @@ document.getElementById('fab').style.display='none';
    Opening the shared link with a #hash jumps straight to that tab, and
    optionally a sub-target after a slash:
    #home  #halls  #codes  #partners  #more
-   #partners/<partnerId>         — jumps straight to that partner's detail
+   #partners/<seq>               — jumps straight to that partner's detail (예: #partners/20)
    #more/hallinfo  #more/terms  #more/bouquet  #more/parking
-   #more/checklist              — jumps straight to the checklist list
-   #more/checklist/<entryId>    — also opens that one entry's detail view
+   #more/<seq>  (1 주차, 2 홀 기본정보, 3 용어, 4 부케, 5 체크리스트, 6 인스타)
+   #more/5/<entryId>    — also opens that one entry's detail view
                                    (once its data has loaded; prompts for a
                                    password first if the entry is private) */
 let pendingChecklistDeepLinkId = null;
+/* 모든 경로는 일련번호(seq)를 쓴다: #partners/21, #more/1 ...
+   번호는 HTML의 data-seq에 고정되어 있고, 업체를 지워도 다른 번호가 밀리지 않는다.
+   (이미 공유된 #partners/sarak 같은 예전 키워드 링크도 계속 동작한다.) */
+function resolvePartnerKey(key){
+  if(/^\d+$/.test(key)){
+    const el = document.querySelector(`#page-partners .subpage[data-seq="${key}"]`);
+    return el ? el.id.replace(/^partner-/, '') : key;
+  }
+  return key;
+}
+function resolveSubKey(key){
+  if(/^\d+$/.test(key)){
+    const el = document.querySelector(`#page-more .subpage[data-seq="${key}"]`);
+    return el ? el.id.replace(/^sub-/, '') : null;
+  }
+  return document.getElementById('sub-'+key) ? key : null;
+}
+function seqOf(selector){ const el = document.querySelector(selector); return (el && el.dataset.seq) || null; }
 function routeFromHash(){
   const valid = ['home','halls','codes','partners','more'];
   const raw = (location.hash || '').replace('#','');
@@ -365,14 +383,15 @@ function routeFromHash(){
   if(!valid.includes(page)) return;
   go(page);
   if(page==='partners'){
-    if(sub) setTimeout(()=>openPartner(decodeURIComponent(sub)), 0);
+    if(sub) setTimeout(()=>openPartner(resolvePartnerKey(decodeURIComponent(sub))), 0);
     else closePartner();
     return;
   }
   if(page==='more'){
-    if(sub && ['hallinfo','terms','bouquet','parking','checklist','insta'].includes(sub)){
-      setTimeout(()=>openSub(sub), 0);
-      if(sub==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
+    const subName = sub ? resolveSubKey(sub) : null;
+    if(subName){
+      setTimeout(()=>openSub(subName), 0);
+      if(subName==='checklist' && subId) pendingChecklistDeepLinkId = decodeURIComponent(subId);
     }else closeSub();
   }
 }
@@ -389,7 +408,7 @@ function openPartner(name){
   document.querySelectorAll('#page-partners .subpage').forEach(s=>s.classList.remove('active'));
   target.classList.add('active');
   ensurePartnerLinkButton(target, name);
-  pushHash('partners/'+name);
+  pushHash('partners/'+(seqOf('#partner-'+name)||name));
   window.scrollTo(0,0);
 }
 /* Every partner detail page — present and future — automatically gets a
@@ -410,7 +429,7 @@ function ensurePartnerLinkButton(subpageEl, partnerId){
   btn.onclick = (e) => { e.stopPropagation(); copyPartnerLink(partnerId); };
 }
 async function copyPartnerLink(partnerId){
-  const url = `${location.origin}${location.pathname}#partners/${encodeURIComponent(partnerId)}`;
+  const url = `${location.origin}${location.pathname}#partners/${encodeURIComponent(seqOf('#partner-'+partnerId)||partnerId)}`;
   try{
     await navigator.clipboard.writeText(url);
   }catch(e){
@@ -432,7 +451,7 @@ function openSub(name){
   document.getElementById('more-menu').style.display='none';
   document.querySelectorAll('.subpage').forEach(s=>s.classList.remove('active'));
   document.getElementById('sub-'+name).classList.add('active');
-  pushHash('more/'+name);
+  pushHash('more/'+(seqOf('#sub-'+name)||name));
   window.scrollTo(0,0);
 }
 function closeSub(){

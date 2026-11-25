@@ -310,7 +310,7 @@ export async function copyChecklist(){
 export async function copyChecklistLink(){
   const item = checklistState.items.find(x=>x.id===checklistState.viewingId);
   if(!item) return;
-  const url = `${location.origin}${location.pathname}#more/checklist/${encodeURIComponent(item.id)}`;
+  const url = `${location.origin}${location.pathname}#more/5/${encodeURIComponent(item.id)}`;
   await copyText(url);
   toast(item.isPublic
     ? '링크가 복사되었어요. 이 링크를 받은 사람은 누구나 바로 볼 수 있어요.'
