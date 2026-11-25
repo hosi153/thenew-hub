@@ -807,3 +807,13 @@ test('리뉴얼: 홈 바로가기, 제휴 필터, 그룹화된 정보 탭, 확�
   assert.match(main, /pushState/);
   assert.ok(existsSync(join(root, 'web', 'src', 'features', 'partners', 'filter.js')));
 });
+
+test('관리자 비밀번호는 salt가 있는 PBKDF2 해시로 저장 (약한 SHA-256 해시 제거)', async () => {
+  const src = readFileSync(join(root, 'web', 'src', 'security', 'password.js'), 'utf8');
+  assert.match(src, /ADMIN_PW_SALT/);
+  assert.doesNotMatch(src, /c6153ba58146cdde/);
+  const salt = src.match(/ADMIN_PW_SALT = '([0-9a-f]+)'/)[1];
+  const hash = src.match(/ADMIN_PW_HASH = '([0-9a-f]+)'/)[1];
+  const { pbkdf2Sync } = await import('node:crypto');
+  assert.equal(pbkdf2Sync('thenew2026', Buffer.from(salt, 'hex'), 210000, 32, 'sha256').toString('hex'), hash);
+});

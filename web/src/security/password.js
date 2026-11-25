@@ -33,11 +33,12 @@ async function matchesItemPassword(item, pw){
 }
 
 /* Master admin password (fallback for entries with no password of their own,
-   and for overriding any entry's own password). SHA-256 hash only stored here. */
-const ADMIN_PW_HASH = 'c6153ba58146cdde8fccdf3f53a0cb964795a906430a7ba428eccd6dac636cdf';
+   and for overriding any entry's own password). Salted PBKDF2-SHA256 only. */
+const ADMIN_PW_SALT = '905c02b4fd061bce585a9741581ec2b2';
+const ADMIN_PW_HASH = 'b7b6863ceb8881dce3a6548214a7cac7dcf2401e36b8f2025f8389f9e3aa0f36';
 
 /* Returns true if the entered password matches the item's stored hash, OR the admin master password */
 export async function authenticateItem(item, pw){
-  if(await hashPwLegacy(pw) === ADMIN_PW_HASH) return true;
+  if(await derivePwHash(pw, ADMIN_PW_SALT) === ADMIN_PW_HASH) return true;
   return await matchesItemPassword(item, pw);
 }
