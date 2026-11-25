@@ -264,72 +264,6 @@ import { createPasswordFields } from './security/password.js';
 /* ============ GENERIC PASSWORD PROMPT (Promise-based) ============ */
 import { showOverlay, hideOverlay, cancelPwPrompt, submitPwPrompt, verify } from './ui/modal.js';
 
-/* ============ CHAT-MANAGED PATCHES ============
-   When the person asks Claude in chat to add/edit/delete data, Claude adds an
-   entry here (with a unique, never-reused id) and re-delivers this file.
-   The next time ANYONE opens the app, unapplied patches run automatically
-   and are recorded so they never re-run. No in-app admin login needed. */
-const ADMIN_PATCHES = [
-  // { id:'p1', type:'delete', target:'hall', matchId:'h_3' },
-  // { id:'p2', type:'edit',   target:'code', matchId:'seed_c_10', changes:{ code:'새코드' } },
-  // { id:'p3', type:'add',    target:'hall', item:{ code:'2611새신랑', hall:'더뉴홀', datetime:'2026-11-01T13:00', memo:'' } },
-  { id:'p4', type:'edit', target:'hall', matchId:'seed_h_19', changes:{ code:'2612영영' } },
-  { id:'p5', type:'delete', target:'hall', matchId:'seed_h_48' },
-];
-
-async function applyPatches(){
-  let applied = [];
-  const newlyApplied = [];
-  try{
-    const rec = await db.collection('meta').doc('appliedPatches').get();
-    applied = rec.exists ? (rec.data().ids || []) : [];
-  }catch(e){
-    /* Can't tell which patches already ran: do nothing rather than re-run old
-       edits and overwrite changes people made since. */
-    console.warn('appliedPatches unreadable, skipping patches:', e);
-    return;
-  }
-
-  const pending = ADMIN_PATCHES.filter(p => !applied.includes(p.id));
-  if(pending.length===0) return;
-
-  for(const p of pending){
-    const list = p.target==='hall' ? scheduleState.items : matchingCodeState.items;
-    const collection = p.target==='hall' ? 'hallSchedule' : 'matchingCodes';
-    try{
-      let result;
-      if(p.type==='delete'){
-        result = await deleteWithFallback(collection, p.matchId);
-        if(!result.ok) throw new Error(result.error || 'patch-delete-failed');
-        const idx = list.findIndex(x=>x.id===p.matchId);
-        if(idx>-1) list.splice(idx,1);
-      }else if(p.type==='edit'){
-        // Partial merge — works correctly even if this document isn't part of
-        // the currently-loaded page (pagination may not have fetched it yet).
-        result = await mergeWithFallback(collection, p.matchId, p.changes);
-        if(!result.ok) throw new Error(result.error || 'patch-edit-failed');
-        const idx = list.findIndex(x=>x.id===p.matchId);
-        if(idx>-1) Object.assign(list[idx], p.changes);
-      }else if(p.type==='add'){
-        const newId = (p.target==='hall'?'h_':'c_')+'patch_'+p.id;
-        result = await writeWithFallback(collection, newId, p.item);
-        if(!result.ok) throw new Error(result.error || 'patch-add-failed');
-        if(!list.some(x=>x.id===newId)) list.push({ id:newId, ...p.item });
-      }
-      applied.push(p.id);
-      newlyApplied.push(p.id);
-    }catch(e){ console.error('patch apply failed for', p.id, e); }
-  }
-  resetScheduleCalendarCache();
-  if(newlyApplied.length){
-    try{
-      await db.collection('meta').doc('appliedPatches').set({
-        ids: firebase.firestore.FieldValue.arrayUnion(...newlyApplied)
-      }, {merge:true});
-    }catch(e){ console.error('patch status write failed:', e); }
-  }
-}
-
 /* ============ INIT ============ */
 async function init(){
   // Defensive reset up front: some mobile browsers restore a previously-typed
@@ -350,8 +284,6 @@ async function init(){
   ]);
   if(scheduleInitResult.usingSeedFallback) isUsingSeedFallback = true;
   if(codesInitResult.usingSeedFallback) isUsingSeedFallback = true;
-
-  try{ await applyPatches(); }catch(e){ console.error('applyPatches failed:', e); }
 
   try{
     renderHallChips();

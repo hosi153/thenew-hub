@@ -642,7 +642,7 @@ test('bugfix: 저장·삭제는 REST 단일 경로로 확정하고, 읽기 경�
   assert.match(repo, /mutationEpoch/);
   assert.match(repo, /deletedIds/);
   assert.match(repo, /withoutDeleted\(snap\.docs/);
-  assert.match(main, /appliedPatches unreadable, skipping patches/);
+  assert.doesNotMatch(main, /ADMIN_PATCHES|applyPatches/);
 });
 
 test('주차 안내: 이대서울병원 안내 이미지 색상 버전 10장 모두 등록', () => {
@@ -781,4 +781,14 @@ test('사락한복 제휴 페이지: 목록 끝, 가격·혜택·링크·포스�
   assert.match(page, /https:\/\/m\.sarakhanbok\.com\/product\/list\.html\?cate_no=106/);
   assert.match(page, /tel:010-3983-1872/);
   assert.ok(existsSync(join(root, 'web', 'public', 'images', 'partners', 'sarak', 'poster.jpg')));
+});
+
+test('Firebase는 CDN이 아닌 번들, 보안 규칙 파일 존재', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /gstatic\.com\/firebasejs/);
+  const cfg = readFileSync(join(root, 'web', 'src', 'config', 'firebase.js'), 'utf8');
+  assert.match(cfg, /firebase\/compat\/firestore/);
+  const rules = readFileSync(join(root, 'firestore.rules'), 'utf8');
+  assert.match(rules, /match \/\{document=\*\*\}/);
+  assert.match(rules, /allow read, write: if false/);
 });

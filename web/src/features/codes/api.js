@@ -1,3 +1,4 @@
+import { firebase } from '../../config/firebase.js';
 import { createCollectionRepository } from '../../data/collection-repository.js';
 
 const COLLECTION = 'matchingCodes';
@@ -11,7 +12,6 @@ export const saveMatchingCode = (id, data, onStatus) => repo.save(id, data, onSt
 export const deleteMatchingCode = (id, onStatus) => repo.delete(id, onStatus);
 
 export async function loadMatchingCodePage({ after, limit }){
-  /* global firebase */
   return repo.loadPage({
     after,
     limit,
