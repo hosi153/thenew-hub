@@ -542,7 +542,7 @@ test('feature: tapping any bouquet thumbnail opens it full-size in a lightbox', 
   assert.match(main, /window\.closeBouquetLightbox = closeBouquetLightbox;/);
   // clicking the dark backdrop (not the image itself) should also close it,
   // same as every other overlay in the app
-  assert.match(main, /ov\.id==='bqLightboxOverlay'\) closeBouquetLightbox\(\);/);
+  assert.match(main, /bqLightboxOverlay: closeBouquetLightbox/);
 });
 
 test('feature: 디자인바이리본 (invitation design) partner entry is registered with pricing, benefit, contact, and sample sheets', () => {
@@ -841,4 +841,12 @@ test('모든 경로는 seq(일련번호) 기반, 예전 키워드 링크도 호�
   assert.match(html, /id="sub-parking" data-seq="1"/);
   assert.match(main, /resolvePartnerKey/);
   assert.match(main, /resolveSubKey/);
+});
+
+test('모든 모달(.overlay)은 바깥 클릭·Esc로 닫힌다 (OVERLAY_CLOSERS에 등록)', () => {
+  const html = readFileSync(join(root, 'web', 'index.html'), 'utf8');
+  const main = readFileSync(join(root, 'web', 'src', 'main.js'), 'utf8');
+  const ids = [...html.matchAll(/<div class="overlay" id="([A-Za-z]+)"/g)].map((m) => m[1]);
+  assert.ok(ids.includes('instaDetailOverlay'));
+  ids.forEach((id) => assert.match(main, new RegExp(`\\b${id}: `), `${id}가 OVERLAY_CLOSERS에 없음`));
 });

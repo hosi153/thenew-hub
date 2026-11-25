@@ -541,28 +541,31 @@ document.addEventListener('keydown', e=>{
   runDataAction(target);
 });
 
-/* ============ CLICK OUTSIDE TO CLOSE ============ */
+/* ============ CLICK OUTSIDE / ESC TO CLOSE ============
+   모달을 닫는 방법을 한 곳에서 관리한다. 새 모달을 추가하면 여기에 한 줄만 추가하면
+   바깥 클릭과 Esc가 모두 동작한다 (인스타 모달이 빠져 있던 버그의 재발 방지). */
+const OVERLAY_CLOSERS = {
+  hallOverlay: closeHallModal,
+  codeOverlay: closeCodeModal,
+  hallDetailOverlay: closeHallDetail,
+  codeDetailOverlay: closeCodeDetail,
+  pwOverlay: cancelPwPrompt,
+  checklistDetailOverlay: closeChecklistDetail,
+  checklistFormOverlay: closeChecklistFormModal,
+  instaDetailOverlay: closeInstaDetail,
+  instaFormOverlay: closeInstaFormModal,
+  bqLightboxOverlay: closeBouquetLightbox,
+};
 document.querySelectorAll('.overlay').forEach(ov=>{
   ov.addEventListener('click', (e)=>{
     if(e.target !== ov) return; // only when the backdrop itself was clicked, not the modal content
-    if(ov.id==='hallOverlay') closeHallModal();
-    else if(ov.id==='codeOverlay') closeCodeModal();
-    else if(ov.id==='hallDetailOverlay') closeHallDetail();
-    else if(ov.id==='codeDetailOverlay') closeCodeDetail();
-    else if(ov.id==='pwOverlay') cancelPwPrompt();
-    else if(ov.id==='checklistDetailOverlay') closeChecklistDetail();
-    else if(ov.id==='bqLightboxOverlay') closeBouquetLightbox();
-    else if(ov.id==='checklistFormOverlay') closeChecklistFormModal();
+    const close = OVERLAY_CLOSERS[ov.id];
+    if(close) close();
   });
 });
 function closeOverlayFromKeyboard(overlay){
-  if(overlay.id==='pwOverlay') cancelPwPrompt();
-  else if(overlay.id==='hallOverlay') closeHallModal();
-  else if(overlay.id==='codeOverlay') closeCodeModal();
-  else if(overlay.id==='hallDetailOverlay') closeHallDetail();
-  else if(overlay.id==='codeDetailOverlay') closeCodeDetail();
-  else if(overlay.id==='checklistDetailOverlay') closeChecklistDetail();
-  else if(overlay.id==='checklistFormOverlay') closeChecklistFormModal();
+  const close = OVERLAY_CLOSERS[overlay.id];
+  if(close) close();
 }
 document.addEventListener('keydown', e=>{
   const pwOverlay = document.getElementById('pwOverlay');
